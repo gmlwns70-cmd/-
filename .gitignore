@@ -1,0 +1,16 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+projects/*
+!projects/.gitkeep
+assets/my_footage/*
+!assets/my_footage/README.txt
+assets/licensed/*
+!assets/licensed/README.txt
+assets/bgm/*
+!assets/bgm/README.txt
+fonts/*
+!fonts/README.txt
