@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="선물 상자에 담긴 대추 일러스트">
+  <defs>
+    <radialGradient id="f" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#c25a3c"/><stop offset=".55" stop-color="#8f3422"/><stop offset="1" stop-color="#5f2317"/></radialGradient>
+  </defs>
+  <path d="M40 130 L360 130 L340 270 L60 270 Z" fill="#1c3527"/>
+  <path d="M40 130 L360 130 L352 150 L48 150 Z" fill="#2f5640"/>
+  <g>
+    <ellipse cx="95" cy="120" rx="34" ry="38" fill="url(#f)"/>
+    <ellipse cx="160" cy="112" rx="36" ry="41" fill="url(#f)"/>
+    <ellipse cx="228" cy="114" rx="35" ry="40" fill="url(#f)"/>
+    <ellipse cx="300" cy="120" rx="34" ry="38" fill="url(#f)"/>
+  </g>
+  <g fill="#fff" opacity=".3"><ellipse cx="84" cy="104" rx="8" ry="12"/><ellipse cx="149" cy="96" rx="9" ry="13"/><ellipse cx="217" cy="98" rx="9" ry="13"/><ellipse cx="289" cy="104" rx="8" ry="12"/></g>
+  <rect x="185" y="150" width="30" height="120" fill="#b8924a"/>
+  <path d="M120 200 H280" stroke="#b8924a" stroke-width="1.5" opacity=".6"/>
+</svg>

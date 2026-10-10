@@ -1,0 +1,129 @@
+<!--
+title: 수확 전 예약 구매
+description: 문의대추정원 대왕사과대추 수확 전 예약 신청. 원하시는 등급과 수량, 받으실 시기를 남겨 주시면 수확 시작 시 순서대로 연락드립니다.
+nav: reserve
+-->
+<section class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="현재 위치"><a href="index.html">홈</a><span aria-hidden="true">›</span>예약 구매</nav>
+    <h1>수확 전 예약 구매</h1>
+    <p class="lead">제철이 짧은 생대추, 수확 전에 미리 예약해 두세요.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Process</span>
+      <h2>예약은 이렇게 진행됩니다</h2>
+      <hr class="divider">
+    </div>
+    <ol class="steps horizontal">
+      <li><h3>예약 신청</h3><p>아래 양식에 등급·수량·희망 시기를 남겨 주세요. 결제는 이 단계에서 하지 않습니다.</p></li>
+      <li><h3>확인 연락</h3><p>농장에서 연락드려 물량과 가격, 결제 방법을 안내합니다.</p></li>
+      <li><h3>주문 확정</h3><p>안내받은 내용에 동의하시고 결제하시면 주문이 확정됩니다.</p></li>
+      <li><h3>수확 후 발송</h3><p>수확·선별 순서대로 발송하고 발송일을 알려 드립니다.</p></li>
+    </ol>
+    <div class="notice mt-l">
+      <p><strong>꼭 확인해 주세요.</strong> 예약 신청은 구매 의사를 남기는 단계이며, 농장의 확인 연락과 결제 후에 주문이 확정됩니다. 작황에 따라 원하시는 등급의 물량이 부족할 수 있으며, 이 경우 미리 연락드려 다른 등급 또는 취소 여부를 여쭙겠습니다.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section bg-beige" id="form" aria-labelledby="form-title">
+  <div class="wrap narrow">
+    <div class="section-head">
+      <span class="eyebrow">Reservation</span>
+      <h2 id="form-title">예약 신청서</h2>
+      <hr class="divider">
+      <p class="lead"><span class="req">*</span> 표시는 필수 항목입니다.</p>
+    </div>
+    <div class="form-card">
+      <form class="form" data-result="reserve-result" data-form-title="문의대추정원 예약 신청">
+        <input type="hidden" name="form" value="reserve">
+        <div class="field">
+          <span class="label" id="item-label">원하시는 상품<span class="req">*</span></span>
+          <div class="choice-group" role="radiogroup" aria-labelledby="item-label">
+            <label class="choice"><input type="radio" name="item" value="premium" data-label="상품" required><span>선물 특품</span></label>
+            <label class="choice"><input type="radio" name="item" value="standard" data-label="상품"><span>상품</span></label>
+            <label class="choice"><input type="radio" name="item" value="home" data-label="상품"><span>가정용 실속</span></label>
+            <label class="choice"><input type="radio" name="item" value="gift" data-label="상품"><span>선물 세트 (여러 곳 발송)</span></label>
+            <label class="choice"><input type="radio" name="item" value="undecided" data-label="상품"><span>상담 후 결정</span></label>
+          </div>
+          <p class="error" role="alert"></p>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="r-qty">희망 수량 / 중량<span class="req">*</span></label>
+            <input id="r-qty" name="qty" type="text" placeholder="예: 2상자, 또는 2kg 정도" required>
+            <p class="error" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="r-when">희망 수령 시기</label>
+            <select id="r-when" name="when">
+              <option value="수확되는 대로 빨리">수확되는 대로 빨리</option>
+              <option value="명절 전">명절 전</option>
+              <option value="특정 날짜 (요청사항에 기재)">특정 날짜 (요청사항에 기재)</option>
+              <option value="상관없음">상관없음</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="r-name">주문하시는 분 성함<span class="req">*</span></label>
+            <input id="r-name" name="name" type="text" autocomplete="name" required>
+            <p class="error" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="r-phone">연락처<span class="req">*</span></label>
+            <input id="r-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000" required>
+            <p class="error" role="alert"></p>
+          </div>
+        </div>
+        <div class="field">
+          <label for="r-addr">받으실 주소</label>
+          <input id="r-addr" name="address" type="text" autocomplete="street-address" placeholder="확인 연락 때 알려 주셔도 됩니다">
+          <p class="hint">선물로 여러 곳에 보내실 경우 받는 분 목록은 확인 연락 때 받습니다.</p>
+        </div>
+        <div class="field">
+          <label for="r-memo">요청사항</label>
+          <textarea id="r-memo" name="memo" placeholder="받는 분, 희망 날짜, 궁금한 점 등을 자유롭게 적어 주세요."></textarea>
+        </div>
+        {{CONSENT_RESERVE}}
+        <button class="btn btn-primary btn-block" type="submit">예약 신청하기</button>
+      </form>
+      <div class="result-panel mt-l" id="reserve-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="notify" aria-labelledby="notify-title">
+  <div class="wrap narrow">
+    <div class="section-head">
+      <span class="eyebrow">Notify</span>
+      <h2 id="notify-title">아직 결정 전이라면, 수확 알림만 받아 보세요</h2>
+      <hr class="divider">
+      <p class="lead">수확 시작과 예약 오픈 소식을 문자·카카오톡으로 알려 드립니다. 원하실 때 언제든 수신을 그만두실 수 있습니다.</p>
+    </div>
+    <div class="form-card">
+      <form class="form" data-result="notify-result" data-form-title="문의대추정원 수확 알림 신청">
+        <input type="hidden" name="form" value="notify">
+        <div class="form-row">
+          <div class="field">
+            <label for="n-name">성함<span class="req">*</span></label>
+            <input id="n-name" name="name" type="text" autocomplete="name" required>
+            <p class="error" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="n-phone">연락처<span class="req">*</span></label>
+            <input id="n-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000" required>
+            <p class="error" role="alert"></p>
+          </div>
+        </div>
+        {{CONSENT_NOTIFY}}
+        <button class="btn btn-green btn-block" type="submit">수확 알림 신청</button>
+      </form>
+      <div class="result-panel mt-l" id="notify-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>

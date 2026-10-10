@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="가지에 달린 대왕사과대추 일러스트">
+  <defs>
+    <radialGradient id="f" cx="35%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#c25a3c"/><stop offset=".55" stop-color="#8f3422"/><stop offset="1" stop-color="#5f2317"/>
+    </radialGradient>
+    <radialGradient id="g" cx="35%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#d9c27a"/><stop offset=".5" stop-color="#b5933f"/><stop offset="1" stop-color="#8a3a22"/>
+    </radialGradient>
+  </defs>
+  <path d="M20 70 C120 60 210 90 300 60 S380 40 390 30" fill="none" stroke="#6b4a2c" stroke-width="9" stroke-linecap="round"/>
+  <g fill="#5d8a5f">
+    <ellipse cx="80" cy="52" rx="34" ry="13" transform="rotate(-18 80 52)"/>
+    <ellipse cx="165" cy="96" rx="36" ry="13" transform="rotate(22 165 96)"/>
+    <ellipse cx="255" cy="48" rx="34" ry="12" transform="rotate(-24 255 48)"/>
+    <ellipse cx="330" cy="76" rx="30" ry="11" transform="rotate(18 330 76)"/>
+  </g>
+  <g fill="#7fa77c" opacity=".9">
+    <ellipse cx="120" cy="88" rx="28" ry="10" transform="rotate(30 120 88)"/>
+    <ellipse cx="300" cy="40" rx="26" ry="9" transform="rotate(-30 300 40)"/>
+  </g>
+  <g stroke="#6b4a2c" stroke-width="4" stroke-linecap="round">
+    <path d="M135 78 L140 130"/><path d="M228 76 L222 150"/><path d="M290 62 L300 120"/>
+  </g>
+  <ellipse cx="142" cy="200" rx="66" ry="76" fill="url(#f)"/>
+  <ellipse cx="220" cy="250" rx="74" ry="86" fill="url(#g)"/>
+  <ellipse cx="305" cy="185" rx="58" ry="68" fill="url(#f)"/>
+  <g fill="#fff" opacity=".35">
+    <ellipse cx="118" cy="168" rx="16" ry="24" transform="rotate(-20 118 168)"/>
+    <ellipse cx="192" cy="212" rx="18" ry="28" transform="rotate(-20 192 212)"/>
+    <ellipse cx="284" cy="156" rx="13" ry="20" transform="rotate(-20 284 156)"/>
+  </g>
+  <g fill="#4a1b11"><circle cx="140" cy="128" r="5"/><circle cx="222" cy="168" r="5"/><circle cx="302" cy="120" r="4.5"/></g>
+</svg>

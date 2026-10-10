@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>수확 전 예약 구매 | 문의대추정원</title>
+<meta name="description" content="문의대추정원 대왕사과대추 수확 전 예약 신청. 원하시는 등급과 수량, 받으실 시기를 남겨 주시면 수확 시작 시 순서대로 연락드립니다.">
+<meta name="theme-color" content="#1c3527">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="문의대추정원">
+<meta property="og:title" content="수확 전 예약 구매 | 문의대추정원">
+<meta property="og:description" content="문의대추정원 대왕사과대추 수확 전 예약 신청. 원하시는 등급과 수량, 받으실 시기를 남겨 주시면 수확 시작 시 순서대로 연락드립니다.">
+<meta property="og:locale" content="ko_KR">
+
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-form-endpoint="" data-email="">
+<a class="skip-link" href="#main">본문 바로가기</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="문의대추정원 홈"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="currentColor" opacity=".1"/><ellipse cx="20" cy="23" rx="10" ry="12" fill="#8f3422"/><ellipse cx="17" cy="19" rx="2.6" ry="4" fill="#fff" opacity=".35"/><path d="M20 11 C21 7 24.5 5 29 6 C27 10 24 11.5 20 11Z" fill="#5d8a5f"/></svg><span><span class="logo-text">문의대추정원</span><span class="logo-sub">MUNUI JUJUBE GARDEN</span></span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="gnb" aria-label="메뉴 열기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <nav class="gnb" id="gnb" aria-label="주 메뉴"><ul><li><a href="brand.html">브랜드 소개</a></li><li><a href="product.html">상품 안내</a></li><li><a href="grade.html">상품 등급</a></li><li><a href="gift.html">선물 세트</a></li><li><a href="reserve.html" aria-current="page">예약 구매</a></li><li><a href="news.html">농장 소식</a></li><li class="gnb-cta"><a href="contact.html">고객 문의</a></li></ul></nav>
+  </div>
+</header>
+<main id="main">
+<section class="page-hero">
+  <div class="wrap">
+    <nav class="breadcrumb" aria-label="현재 위치"><a href="index.html">홈</a><span aria-hidden="true">›</span>예약 구매</nav>
+    <h1>수확 전 예약 구매</h1>
+    <p class="lead">제철이 짧은 생대추, 수확 전에 미리 예약해 두세요.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Process</span>
+      <h2>예약은 이렇게 진행됩니다</h2>
+      <hr class="divider">
+    </div>
+    <ol class="steps horizontal">
+      <li><h3>예약 신청</h3><p>아래 양식에 등급·수량·희망 시기를 남겨 주세요. 결제는 이 단계에서 하지 않습니다.</p></li>
+      <li><h3>확인 연락</h3><p>농장에서 연락드려 물량과 가격, 결제 방법을 안내합니다.</p></li>
+      <li><h3>주문 확정</h3><p>안내받은 내용에 동의하시고 결제하시면 주문이 확정됩니다.</p></li>
+      <li><h3>수확 후 발송</h3><p>수확·선별 순서대로 발송하고 발송일을 알려 드립니다.</p></li>
+    </ol>
+    <div class="notice mt-l">
+      <p><strong>꼭 확인해 주세요.</strong> 예약 신청은 구매 의사를 남기는 단계이며, 농장의 확인 연락과 결제 후에 주문이 확정됩니다. 작황에 따라 원하시는 등급의 물량이 부족할 수 있으며, 이 경우 미리 연락드려 다른 등급 또는 취소 여부를 여쭙겠습니다.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section bg-beige" id="form" aria-labelledby="form-title">
+  <div class="wrap narrow">
+    <div class="section-head">
+      <span class="eyebrow">Reservation</span>
+      <h2 id="form-title">예약 신청서</h2>
+      <hr class="divider">
+      <p class="lead"><span class="req">*</span> 표시는 필수 항목입니다.</p>
+    </div>
+    <div class="form-card">
+      <form class="form" data-result="reserve-result" data-form-title="문의대추정원 예약 신청">
+        <input type="hidden" name="form" value="reserve">
+        <div class="field">
+          <span class="label" id="item-label">원하시는 상품<span class="req">*</span></span>
+          <div class="choice-group" role="radiogroup" aria-labelledby="item-label">
+            <label class="choice"><input type="radio" name="item" value="premium" data-label="상품" required><span>선물 특품</span></label>
+            <label class="choice"><input type="radio" name="item" value="standard" data-label="상품"><span>상품</span></label>
+            <label class="choice"><input type="radio" name="item" value="home" data-label="상품"><span>가정용 실속</span></label>
+            <label class="choice"><input type="radio" name="item" value="gift" data-label="상품"><span>선물 세트 (여러 곳 발송)</span></label>
+            <label class="choice"><input type="radio" name="item" value="undecided" data-label="상품"><span>상담 후 결정</span></label>
+          </div>
+          <p class="error" role="alert"></p>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="r-qty">희망 수량 / 중량<span class="req">*</span></label>
+            <input id="r-qty" name="qty" type="text" placeholder="예: 2상자, 또는 2kg 정도" required>
+            <p class="error" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="r-when">희망 수령 시기</label>
+            <select id="r-when" name="when">
+              <option value="수확되는 대로 빨리">수확되는 대로 빨리</option>
+              <option value="명절 전">명절 전</option>
+              <option value="특정 날짜 (요청사항에 기재)">특정 날짜 (요청사항에 기재)</option>
+              <option value="상관없음">상관없음</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="r-name">주문하시는 분 성함<span class="req">*</span></label>
+            <input id="r-name" name="name" type="text" autocomplete="name" required>
+            <p class="error" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="r-phone">연락처<span class="req">*</span></label>
+            <input id="r-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000" required>
+            <p class="error" role="alert"></p>
+          </div>
+        </div>
+        <div class="field">
+          <label for="r-addr">받으실 주소</label>
+          <input id="r-addr" name="address" type="text" autocomplete="street-address" placeholder="확인 연락 때 알려 주셔도 됩니다">
+          <p class="hint">선물로 여러 곳에 보내실 경우 받는 분 목록은 확인 연락 때 받습니다.</p>
+        </div>
+        <div class="field">
+          <label for="r-memo">요청사항</label>
+          <textarea id="r-memo" name="memo" placeholder="받는 분, 희망 날짜, 궁금한 점 등을 자유롭게 적어 주세요."></textarea>
+        </div>
+        
+<div class="consent field">
+  <p class="mb-0"><strong>개인정보 수집·이용 동의 (필수)</strong></p>
+  <div class="table-wrap"><table>
+    <tbody>
+      <tr><th scope="row">수집 항목</th><td>이름, 연락처, 받는 분 주소(선물 시 받는 분 정보 포함), 요청사항</td></tr>
+      <tr><th scope="row">수집 목적</th><td>예약 접수, 수확·발송 일정 안내, 주문 확인 연락</td></tr>
+      <tr><th scope="row">보유 기간</th><td>목적 달성 후 지체 없이 파기 (관계 법령에 따라 보존이 필요한 경우 해당 기간까지)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small text-muted">동의를 거부할 수 있으며, 거부 시 신청 및 상담이 제한됩니다. 자세한 내용은 <a href="privacy.html">개인정보 처리방침</a>을 확인해 주세요.</p>
+  <label class="check"><input type="checkbox" name="agree_privacy" value="동의" data-label="개인정보 수집·이용 동의(필수)" required> <span>위 내용을 확인했으며 개인정보 수집·이용에 동의합니다. <span class="req">(필수)</span></span></label>
+  <p class="error" role="alert"></p>
+</div>
+<div class="consent">
+  <label class="check"><input type="checkbox" name="agree_marketing" value="동의" data-label="수확·예약 소식 수신 동의(선택)"> <span>수확 시작, 예약 오픈 등 농장 소식을 문자·카카오톡으로 받겠습니다. <span class="text-muted">(선택 · 동의하지 않아도 신청 가능 · 언제든 철회 가능)</span></span></label>
+</div>
+<input type="text" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
+
+        <button class="btn btn-primary btn-block" type="submit">예약 신청하기</button>
+      </form>
+      <div class="result-panel mt-l" id="reserve-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="notify" aria-labelledby="notify-title">
+  <div class="wrap narrow">
+    <div class="section-head">
+      <span class="eyebrow">Notify</span>
+      <h2 id="notify-title">아직 결정 전이라면, 수확 알림만 받아 보세요</h2>
+      <hr class="divider">
+      <p class="lead">수확 시작과 예약 오픈 소식을 문자·카카오톡으로 알려 드립니다. 원하실 때 언제든 수신을 그만두실 수 있습니다.</p>
+    </div>
+    <div class="form-card">
+      <form class="form" data-result="notify-result" data-form-title="문의대추정원 수확 알림 신청">
+        <input type="hidden" name="form" value="notify">
+        <div class="form-row">
+          <div class="field">
+            <label for="n-name">성함<span class="req">*</span></label>
+            <input id="n-name" name="name" type="text" autocomplete="name" required>
+            <p class="error" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="n-phone">연락처<span class="req">*</span></label>
+            <input id="n-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000" required>
+            <p class="error" role="alert"></p>
+          </div>
+        </div>
+        
+<div class="consent field">
+  <p class="mb-0"><strong>개인정보 수집·이용 동의 (필수)</strong></p>
+  <div class="table-wrap"><table>
+    <tbody>
+      <tr><th scope="row">수집 항목</th><td>이름, 연락처</td></tr>
+      <tr><th scope="row">수집 목적</th><td>수확 시작·예약 오픈 알림 발송</td></tr>
+      <tr><th scope="row">보유 기간</th><td>목적 달성 후 지체 없이 파기 (관계 법령에 따라 보존이 필요한 경우 해당 기간까지)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small text-muted">동의를 거부할 수 있으며, 거부 시 신청 및 상담이 제한됩니다. 자세한 내용은 <a href="privacy.html">개인정보 처리방침</a>을 확인해 주세요.</p>
+  <label class="check"><input type="checkbox" name="agree_privacy" value="동의" data-label="개인정보 수집·이용 동의(필수)" required> <span>위 내용을 확인했으며 개인정보 수집·이용에 동의합니다. <span class="req">(필수)</span></span></label>
+  <p class="error" role="alert"></p>
+</div>
+<div class="consent">
+  <label class="check"><input type="checkbox" name="agree_marketing" value="동의" data-label="수확·예약 소식 수신 동의(선택)"> <span>수확 시작, 예약 오픈 등 농장 소식을 문자·카카오톡으로 받겠습니다. <span class="text-muted">(선택 · 동의하지 않아도 신청 가능 · 언제든 철회 가능)</span></span></label>
+</div>
+<input type="text" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
+
+        <button class="btn btn-green btn-block" type="submit">수확 알림 신청</button>
+      </form>
+      <div class="result-panel mt-l" id="notify-result" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a class="logo" href="index.html"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="currentColor" opacity=".1"/><ellipse cx="20" cy="23" rx="10" ry="12" fill="#8f3422"/><ellipse cx="17" cy="19" rx="2.6" ry="4" fill="#fff" opacity=".35"/><path d="M20 11 C21 7 24.5 5 29 6 C27 10 24 11.5 20 11Z" fill="#5d8a5f"/></svg><span><span class="logo-text">문의대추정원</span><span class="logo-sub">MUNUI JUJUBE GARDEN</span></span></a>
+        <p>문의의 햇살과 정성을 담아,<br>한 알 한 알 제대로 키웁니다.</p>
+      </div>
+      <div><h2>둘러보기</h2><ul><li><a href="brand.html">브랜드 소개</a></li><li><a href="product.html">상품 안내</a></li><li><a href="grade.html">상품 등급</a></li><li><a href="gift.html">선물 세트</a></li><li><a href="reserve.html">예약 구매</a></li><li><a href="news.html">농장 소식</a></li></ul></div>
+      <div><h2>고객 안내</h2><ul><li><a href="quality.html">품질 정보 공개</a></li><li><a href="storage.html">보관 및 이용 안내</a></li><li><a href="faq.html">자주 묻는 질문</a></li><li><a href="contact.html">고객 문의</a></li></ul></div>
+    </div>
+    <div class="footer-legal">
+      <div class="policy-links"><a href="privacy.html">개인정보 처리방침</a><a href="terms.html">이용약관</a></div>
+      <dl>
+        <div><dt>상호</dt><dd>문의대추정원</dd></div>
+        <div><dt>대표자</dt><dd><span class="pending">등록 예정</span></dd></div>
+        <div><dt>사업자등록번호</dt><dd><span class="pending">등록 예정</span></dd></div>
+        <div><dt>통신판매업 신고번호</dt><dd><span class="pending">등록 예정</span></dd></div>
+      </dl>
+      <dl>
+        <div><dt>주소</dt><dd>충청북도 청주시 상당구 문의면</dd></div>
+        <div><dt>전화</dt><dd><span class="pending">등록 예정</span></dd></div>
+        <div><dt>이메일</dt><dd><span class="pending">등록 예정</span></dd></div>
+      </dl>
+      <p class="copyright">© 2026 문의대추정원. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+<nav class="mobile-bar" aria-label="빠른 메뉴"><a class="btn btn-primary" href="reserve.html">예약 신청</a><a class="btn btn-line" href="contact.html">구매 문의</a></nav>
+<script src="assets/js/main.js" defer></script>
+</body>
+</html>
