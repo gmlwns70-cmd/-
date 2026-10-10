@@ -1,4 +1,4 @@
-"""문의대추정원 홈페이지 빌드 스크립트.
+"""청남대 대추 정원 홈페이지 빌드 스크립트.
 
 _pages/ 안의 본문 조각에 공통 헤더·푸터·SEO 태그를 입혀
 website/ 폴더에 완성된 HTML 파일을 만듭니다.
@@ -23,8 +23,8 @@ PAGES = ROOT / "_pages"
 # 사업 정보 — 확인된 값만 입력하세요.
 # ---------------------------------------------------------------------------
 SITE = {
-    "name": "문의대추정원",
-    "name_en": "MUNUI JUJUBE GARDEN",
+    "name": "청남대 대추 정원",
+    "name_en": "CHEONGNAMDAE JUJUBE GARDEN",
     "region": "충청북도 청주시 상당구 문의면",
     "base_url": "",            # 예: "https://www.example.kr" (도메인 연결 후 입력 → canonical·sitemap 생성)
     "phone": "",               # 예: "010-0000-0000"
