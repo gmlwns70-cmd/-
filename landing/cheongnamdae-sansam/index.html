@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>청남대 웰니스타운 산삼고추장·산삼된장 기간 한정 특가</title>
+<meta name="description" content="청남대 웰니스타운 산삼고추장·산삼된장을 행사 기간에만 특별한 가격으로 만나보세요.">
+<meta property="og:title" content="청남대 웰니스타운 산삼고추장·산삼된장 기간 한정 특가">
+<meta property="og:description" content="행사 기간에만 열리는 특가 페이지입니다. 세트 구성으로 더 알뜰하게 준비하세요.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="images/og.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --hanji:#f8f3ea;
+    --hanji-2:#f1e8d8;
+    --ink:#2a211b;
+    --ink-soft:#5e5249;
+    --line:#e2d5c0;
+    --gochu:#b5291c;
+    --gochu-deep:#8c1d13;
+    --doen:#8a5a2b;
+    --doen-deep:#5f3c1b;
+    --pine:#2f4a3a;
+    --gold:#c99a3b;
+    --white:#fffdf9;
+    --radius:18px;
+    --shadow:0 10px 30px rgba(60,35,15,.10);
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--hanji);color:var(--ink);font-family:"Noto Sans KR",system-ui,-apple-system,sans-serif;line-height:1.65;word-break:keep-all;overflow-x:hidden}
+  img{max-width:100%;display:block}
+  a{color:inherit}
+  .wrap{max-width:960px;margin:0 auto;padding:0 16px}
+  .serif{font-family:"Noto Serif KR",serif}
+  button{font:inherit}
+
+  /* 초안 경고 배너 */
+  .draft{background:#1f1f1f;color:#ffd75e;font-size:13px;text-align:center;padding:8px 16px}
+
+  /* 상단 띠 */
+  .topbar{background:var(--gochu-deep);color:#fff;font-size:14px;text-align:center;padding:9px 16px;font-weight:500;position:sticky;top:0;z-index:30}
+  .topbar b{color:#ffe2a8}
+
+  /* 히어로 */
+  .hero{position:relative;background:
+      radial-gradient(1200px 500px at 85% -10%, rgba(181,41,28,.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(138,90,43,.16), transparent 60%),
+      var(--hanji);padding:56px 0 48px;overflow:hidden}
+  .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:32px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--pine);background:rgba(47,74,58,.08);border:1px solid rgba(47,74,58,.2);padding:6px 12px;border-radius:999px}
+  .hero h1{font-family:"Noto Serif KR",serif;font-weight:900;font-size:clamp(32px,6vw,54px);line-height:1.22;margin:18px 0 14px;letter-spacing:-.01em}
+  .hero h1 em{font-style:normal;color:var(--gochu)}
+  .hero h1 em.d{color:var(--doen)}
+  .hero p.lead{font-size:clamp(16px,2.4vw,18px);color:var(--ink-soft);margin:0 0 24px}
+  .hero-visual{position:relative;display:flex;justify-content:center;gap:4px}
+  .hero-visual .jar{width:48%;filter:drop-shadow(0 18px 24px rgba(60,35,15,.22))}
+  .hero-visual .jar:last-child{margin-top:36px}
+  .badge-sale{position:absolute;top:-6px;right:4px;width:96px;height:96px;border-radius:50%;background:var(--gochu);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;line-height:1.1;transform:rotate(10deg);box-shadow:0 8px 20px rgba(140,29,19,.35);text-align:center}
+  .badge-sale small{font-size:12px;font-weight:500}
+  .badge-sale span{font-size:26px}
+
+  /* 카운트다운 */
+  .countdown{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 26px}
+  .countdown .label{font-size:14px;font-weight:700;color:var(--gochu-deep)}
+  .cd{display:flex;gap:6px}
+  .cd div{min-width:58px;background:var(--ink);color:#fff;border-radius:10px;text-align:center;padding:6px 4px 4px}
+  .cd b{display:block;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.1}
+  .cd small{font-size:11px;opacity:.75}
+  .period{font-size:13px;color:var(--ink-soft);margin-top:-14px;margin-bottom:22px}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;text-decoration:none;font-weight:700;border-radius:14px;padding:16px 26px;font-size:17px;transition:transform .15s ease, box-shadow .15s ease, background .15s}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--gochu);color:#fff;box-shadow:0 8px 20px rgba(181,41,28,.28)}
+  .btn-primary:hover{background:var(--gochu-deep)}
+  .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+  .btn-kakao{background:#fee500;color:#191919}
+  .btn[disabled]{background:#b9aea3;box-shadow:none;cursor:not-allowed}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+  /* 섹션 공통 */
+  section{padding:64px 0}
+  .sec-head{text-align:center;margin-bottom:36px}
+  .sec-head .kicker{font-size:13px;letter-spacing:.18em;color:var(--doen);font-weight:700}
+  .sec-head h2{font-family:"Noto Serif KR",serif;font-size:clamp(26px,4.4vw,36px);margin:8px 0 10px;line-height:1.3}
+  .sec-head p{color:var(--ink-soft);margin:0}
+  .alt{background:var(--hanji-2)}
+  .dark{background:var(--pine);color:#f3eee4}
+  .dark .sec-head .kicker{color:#d9c08a}
+  .dark .sec-head p{color:#cfd8cf}
+
+  /* 상품 카드 */
+  .products{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .card .thumb{aspect-ratio:1/1;background:#efe4d1;display:flex;align-items:center;justify-content:center;position:relative}
+  .card .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .card .thumb svg{width:70%}
+  .card .tag{position:absolute;z-index:1;left:14px;top:14px;background:var(--ink);color:#fff;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px}
+  .card .body{padding:22px;display:flex;flex-direction:column;gap:10px;flex:1}
+  .card h3{font-family:"Noto Serif KR",serif;font-size:24px;margin:0}
+  .card .sub{color:var(--ink-soft);font-size:15px;margin:0}
+  .card ul{margin:4px 0 0;padding-left:18px;color:var(--ink-soft);font-size:15px}
+  .price{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+  .price .pct{color:var(--gochu);font-weight:900;font-size:24px}
+  .price .now{font-weight:900;font-size:28px}
+  .price .now small{font-size:16px;font-weight:700}
+  .price .was{color:#9a8d80;text-decoration:line-through;font-size:15px}
+  .price .unit{font-size:13px;color:var(--ink-soft);width:100%}
+
+  /* 스토리 포인트 */
+  .points{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .point{border:1px solid rgba(255,255,255,.16);border-radius:var(--radius);padding:26px 22px;background:rgba(255,255,255,.04)}
+  .point .num{font-family:"Noto Serif KR",serif;font-size:34px;color:var(--gold);font-weight:900;line-height:1}
+  .point h3{font-size:19px;margin:12px 0 8px}
+  .point p{margin:0;color:#d6ddd5;font-size:15px}
+
+  /* 이렇게 드세요 */
+  .uses{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .use{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:18px 16px;text-align:center}
+  .use .ico{font-size:30px}
+  .use b{display:block;margin:6px 0 2px}
+  .use span{font-size:14px;color:var(--ink-soft)}
+
+  /* 주문 */
+  .order-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:22px;align-items:start}
+  .opt{display:flex;align-items:center;gap:14px;background:var(--white);border:1.5px solid var(--line);border-radius:16px;padding:16px 16px;margin-bottom:12px;transition:border-color .15s, box-shadow .15s}
+  .opt.on{border-color:var(--gochu);box-shadow:0 0 0 3px rgba(181,41,28,.10)}
+  .opt .info{flex:1;min-width:0}
+  .opt .name{font-weight:700;font-size:16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .opt .best{background:var(--gochu);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .opt .desc{font-size:13px;color:var(--ink-soft)}
+  .opt .p{font-size:15px;margin-top:2px}
+  .opt .p b{font-size:17px}
+  .opt .p s{color:#9a8d80;font-size:13px;margin-left:4px}
+  .qty{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex-shrink:0}
+  .qty button{width:38px;height:40px;border:0;background:#f4ece0;cursor:pointer;font-size:20px;color:var(--ink)}
+  .qty button:disabled{opacity:.4;cursor:not-allowed}
+  .qty output{width:36px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+
+  .summary{position:sticky;top:64px;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .summary h3{margin:0 0 12px;font-size:18px}
+  .sum-lines{list-style:none;margin:0 0 12px;padding:0;font-size:14px;color:var(--ink-soft);min-height:24px}
+  .sum-lines li{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+  .sum-row{display:flex;justify-content:space-between;padding:6px 0;font-size:15px;border-top:1px dashed var(--line)}
+  .sum-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;border-top:2px solid var(--ink);margin-top:6px}
+  .sum-total b{font-size:26px;color:var(--gochu)}
+  .ship-hint{font-size:13px;color:var(--pine);background:rgba(47,74,58,.08);border-radius:10px;padding:8px 10px;margin:10px 0 14px}
+  .summary .btn{width:100%;margin-top:8px}
+  .copied{font-size:13px;color:var(--pine);text-align:center;min-height:20px;margin-top:6px}
+
+  /* 주문 방법 단계 */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:s}
+  .step{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:22px 20px;position:relative}
+  .step::before{counter-increment:s;content:counter(s);position:absolute;top:-14px;left:20px;width:30px;height:30px;border-radius:50%;background:var(--doen);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center}
+  .step h3{margin:8px 0 6px;font-size:17px}
+  .step p{margin:0;font-size:14px;color:var(--ink-soft)}
+  .bank{margin-top:22px;background:var(--white);border:1.5px dashed var(--doen);border-radius:16px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .bank b{font-size:18px}
+
+  /* 정보 표 / FAQ */
+  .tabs{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+  .tabs button{border:1px solid var(--line);background:var(--white);padding:9px 18px;border-radius:999px;cursor:pointer;font-weight:700}
+  .tabs button[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  table.info{width:100%;border-collapse:collapse;background:var(--white);border-radius:14px;overflow:hidden;font-size:14px}
+  table.info th,table.info td{border-bottom:1px solid var(--line);padding:12px 14px;text-align:left;vertical-align:top}
+  table.info th{width:32%;background:#f4ece0;font-weight:700}
+  .faq details{background:var(--white);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;padding:0 18px}
+  .faq summary{cursor:pointer;font-weight:700;padding:16px 0;list-style:none;display:flex;justify-content:space-between;gap:10px}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:"+";font-size:20px;line-height:1;color:var(--doen)}
+  .faq details[open] summary::after{content:"–"}
+  .faq details p{margin:0 0 16px;color:var(--ink-soft);font-size:15px}
+  .notice{font-size:14px;color:var(--ink-soft);background:var(--white);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .notice h3{font-size:16px;color:var(--ink);margin:0 0 6px}
+  .notice ul{margin:0 0 12px;padding-left:18px}
+
+  footer{background:#221b16;color:#bdb2a6;font-size:13px;padding:36px 0 120px}
+  footer b{color:#efe6d8}
+  footer .biz{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 24px;margin-top:10px}
+
+  /* 하단 고정 바 (모바일) */
+  .bottom-bar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,253,249,.97);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:none;align-items:center;gap:12px}
+  .bottom-bar .t{flex:1;min-width:0;font-size:12px;color:var(--ink-soft);line-height:1.3}
+  .bottom-bar .t b{display:block;font-size:18px;color:var(--gochu)}
+  .bottom-bar .btn{padding:13px 20px;font-size:16px}
+
+  .ended .hide-when-ended{display:none !important}
+
+  @media (max-width:820px){
+    .hero{padding:36px 0 40px}
+    .hero .wrap{grid-template-columns:1fr}
+    .hero-visual{order:-1;max-width:360px;margin:0 auto}
+    .products{grid-template-columns:1fr}
+    .points{grid-template-columns:1fr}
+    .uses{grid-template-columns:repeat(2,1fr)}
+    .order-grid{grid-template-columns:1fr}
+    .summary{position:static}
+    .steps{grid-template-columns:1fr;gap:24px}
+    footer .biz{grid-template-columns:1fr}
+    .bottom-bar{display:flex}
+    section{padding:52px 0}
+    .cd div{min-width:52px}
+  }
+</style>
+</head>
+<body>
+
+<!-- =====================================================================
+  ★ 수정은 맨 아래 <script> 의 CONFIG 한 곳에서만 하면 됩니다. ★
+  (가격·행사기간·주문 링크·계좌·상품정보·사업자정보 등)
+  상품 사진은 images/ 폴더에 gochujang.jpg, doenjang.jpg 로 넣으면 자동으로 바뀝니다.
+====================================================================== -->
+
+<div class="draft" id="draftBanner" hidden>⚠ 미리보기(초안) 상태입니다 — 가격·기간·주문 정보를 확정한 뒤 CONFIG의 draft 값을 false로 바꿔 주세요.</div>
+
+<div class="topbar" id="topbar">🔥 <b>기간 한정 특가</b> · 스마트스토어에서는 만날 수 없는 행사 가격 · <span id="topbarLeft"></span></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">🌲 <span id="brandName">청남대 웰니스타운</span></span>
+      <h1>산삼을 품은 장,<br><em>고추장</em>과 <em class="d">된장</em><br>지금만 특가로</h1>
+      <p class="lead" id="heroLead"></p>
+
+      <div class="countdown" id="countdownBox">
+        <span class="label" id="cdLabel">특가 종료까지</span>
+        <div class="cd" aria-live="polite">
+          <div><b id="cdD">0</b><small>일</small></div>
+          <div><b id="cdH">00</b><small>시간</small></div>
+          <div><b id="cdM">00</b><small>분</small></div>
+          <div><b id="cdS">00</b><small>초</small></div>
+        </div>
+      </div>
+      <div class="period" id="periodText"></div>
+
+      <div class="btn-row">
+        <a href="#order" class="btn btn-primary hide-when-ended">특가로 주문하기 →</a>
+        <a href="#products" class="btn btn-ghost">상품 보기</a>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="badge-sale"><small>최대</small><span id="maxPct">0%</span><small>할인</small></div>
+      <svg class="jar" viewBox="0 0 200 240"><use href="#jar-gochu"/></svg>
+      <svg class="jar" viewBox="0 0 200 240"><use href="#jar-doen"/></svg>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- 상품 -->
+  <section id="products">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kicker">PRODUCTS</div>
+        <h2 class="serif">행사 상품</h2>
+        <p>행사 기간에만 적용되는 가격입니다.</p>
+      </div>
+      <div class="products" id="productList"></div>
+    </div>
+  </section>
+
+  <!-- 스토리 -->
+  <section class="dark">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kicker">OUR STORY</div>
+        <h2 class="serif" id="storyTitle"></h2>
+        <p id="storySub"></p>
+      </div>
+      <div class="points" id="storyPoints"></div>
+    </div>
+  </section>
+
+  <!-- 활용 -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kicker">HOW TO ENJOY</div>
+        <h2 class="serif">이렇게 즐겨 보세요</h2>
+        <p>매일 차리는 밥상에 한 숟가락씩.</p>
+      </div>
+      <div class="uses" id="useList"></div>
+    </div>
+  </section>
+
+  <!-- 주문 -->
+  <section class="alt" id="order">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kicker">ORDER</div>
+        <h2 class="serif">구성 고르고 주문하기</h2>
+        <p id="orderSub">수량을 고르면 결제 금액이 바로 계산됩니다.</p>
+      </div>
+
+      <div class="order-grid">
+        <div id="optionList"></div>
+
+        <aside class="summary" aria-label="주문 요약">
+          <h3>주문 요약</h3>
+          <ul class="sum-lines" id="sumLines"><li>선택한 상품이 없습니다.</li></ul>
+          <div class="sum-row"><span>상품 합계</span><span id="sumGoods">0원</span></div>
+          <div class="sum-row"><span>배송비</span><span id="sumShip">0원</span></div>
+          <div class="sum-row" id="sumSaveRow"><span>할인 금액</span><span id="sumSave" style="color:var(--gochu)">0원</span></div>
+          <div class="sum-total"><span>총 결제금액</span><b id="sumTotal">0원</b></div>
+          <div class="ship-hint" id="shipHint"></div>
+          <button class="btn btn-primary" id="orderBtn" type="button" disabled>주문서 작성하기</button>
+          <a class="btn btn-ghost" id="phoneBtn" href="#" hidden>📞 전화로 주문하기</a>
+          <div class="copied" id="copied" role="status"></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- 주문 방법 -->
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kicker">HOW TO ORDER</div>
+        <h2 class="serif">주문은 이렇게 진행돼요</h2>
+        <p>스마트스토어와 별도로 운영되는 행사 전용 주문입니다.</p>
+      </div>
+      <div class="steps" id="stepList"></div>
+      <div class="bank" id="bankBox" hidden>
+        <div>
+          <div style="font-size:13px;color:var(--ink-soft)">입금 계좌</div>
+          <b id="bankText"></b>
+        </div>
+        <button class="btn btn-ghost" style="padding:10px 16px;font-size:14px" type="button" id="copyBank">계좌 복사</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 상품 정보 고시 -->
+  <section class="alt">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kicker">PRODUCT INFO</div>
+        <h2 class="serif">상품 정보</h2>
+      </div>
+      <div class="tabs" role="tablist" id="infoTabs"></div>
+      <div id="infoPanel"></div>
+    </div>
+  </section>
+
+  <!-- FAQ / 안내 -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="kicker">FAQ</div>
+        <h2 class="serif">자주 묻는 질문</h2>
+      </div>
+      <div class="faq" id="faqList"></div>
+      <div class="notice" id="noticeBox" style="margin-top:22px"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <b id="footBrand"></b>
+    <div class="biz" id="bizInfo"></div>
+    <p style="margin-top:14px">© <span id="year"></span> <span id="footCopy"></span>. All rights reserved.</p>
+  </div>
+</footer>
+
+<div class="bottom-bar hide-when-ended" id="bottomBar">
+  <div class="t"><span id="bbLabel">특가 종료까지</span><b id="bbTotal">주문 금액 0원</b></div>
+  <a href="#order" class="btn btn-primary" id="bbBtn">주문하기</a>
+</div>
+
+<!-- 상품 사진이 없을 때 쓰는 항아리 일러스트 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g-onggi" x1="0" x2="1">
+      <stop offset="0" stop-color="#3b2416"/><stop offset=".45" stop-color="#6b4228"/><stop offset="1" stop-color="#2e1c11"/>
+    </linearGradient>
+    <symbol id="jar-base" viewBox="0 0 200 240">
+      <ellipse cx="100" cy="228" rx="70" ry="8" fill="rgba(0,0,0,.12)"/>
+      <path d="M58 52 C20 80 18 150 40 196 C52 220 148 220 160 196 C182 150 180 80 142 52 Z" fill="url(#g-onggi)"/>
+      <path d="M62 44 h76 c6 0 10 4 10 10 v4 H52 v-4 c0-6 4-10 10-10z" fill="#2a1a10"/>
+      <ellipse cx="100" cy="40" rx="50" ry="10" fill="#4a2e1c"/>
+      <path d="M50 36 Q100 4 150 36 Q100 26 50 36Z" fill="#5a3822"/>
+      <path d="M58 94 C70 90 130 90 142 94" stroke="rgba(255,255,255,.12)" stroke-width="2" fill="none"/>
+      <path d="M50 120 C60 140 54 170 64 190" stroke="rgba(255,255,255,.10)" stroke-width="6" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="jar-gochu" viewBox="0 0 200 240">
+      <use href="#jar-base"/>
+      <rect x="62" y="104" width="76" height="86" rx="6" fill="#fbf4e8"/>
+      <rect x="66" y="108" width="68" height="78" rx="4" fill="none" stroke="#b5291c" stroke-width="1.5"/>
+      <text x="100" y="140" text-anchor="middle" font-family="Noto Serif KR,serif" font-weight="900" font-size="17" fill="#b5291c">산삼</text>
+      <text x="100" y="164" text-anchor="middle" font-family="Noto Serif KR,serif" font-weight="900" font-size="19" fill="#2a211b">고추장</text>
+      <circle cx="100" cy="176" r="3" fill="#b5291c"/>
+    </symbol>
+    <symbol id="jar-doen" viewBox="0 0 200 240">
+      <use href="#jar-base"/>
+      <rect x="62" y="104" width="76" height="86" rx="6" fill="#fbf4e8"/>
+      <rect x="66" y="108" width="68" height="78" rx="4" fill="none" stroke="#8a5a2b" stroke-width="1.5"/>
+      <text x="100" y="140" text-anchor="middle" font-family="Noto Serif KR,serif" font-weight="900" font-size="17" fill="#8a5a2b">산삼</text>
+      <text x="100" y="164" text-anchor="middle" font-family="Noto Serif KR,serif" font-weight="900" font-size="19" fill="#2a211b">된장</text>
+      <circle cx="100" cy="176" r="3" fill="#8a5a2b"/>
+    </symbol>
+  </defs>
+</svg>
+
+<script>
+/* =========================================================================
+   CONFIG — 이 부분만 수정하세요.
+   ※ 아래 가격·용량·기간·계좌·사업자정보는 "예시"입니다. 반드시 실제 값으로 바꾸세요.
+   ========================================================================= */
+const CONFIG = {
+  draft: true,                       // 실제 오픈 시 false 로 (상단 '초안' 경고 숨김)
+
+  brand: "청남대 웰니스타운",
+  heroLead: "청남대 웰니스타운에서 정성으로 빚은 산삼고추장·산삼된장. 행사 기간 동안만 스마트스토어보다 더 좋은 가격으로 준비했습니다.",
+
+  // 행사 기간 (한국 시간 기준, +09:00 유지)
+  startAt: "2026-10-12T00:00:00+09:00",
+  endAt:   "2026-10-26T23:59:59+09:00",
+
+  // 배송비 정책
+  shippingFee: 3500,
+  freeShippingOver: 50000,          // 이 금액 이상이면 무료배송 (0 이면 항상 배송비 부과)
+
+  // 주문 받는 곳 — 쓰는 것만 채우세요 (빈 칸이면 버튼이 숨겨집니다)
+  orderUrl: "",                     // 예: 구글폼 / 네이버폼 주소
+  kakaoUrl: "",                     // 예: https://pf.kakao.com/_xxxx/chat
+  phone: "",                        // 예: 043-000-0000
+  bank: "",                         // 예: 농협 000-0000-0000-00 (예금주 OOO)
+
+  // 상품 (가격은 예시)
+  products: [
+    {
+      id: "gochujang",
+      name: "산삼고추장",
+      volume: "500g",
+      image: "images/gochujang.jpg",
+      fallback: "jar-gochu",
+      tag: "BEST",
+      sub: "칼칼하면서도 깊은 맛, 산삼을 더한 고추장",
+      bullets: ["비빔밥·떡볶이·제육볶음에", "찍어 먹어도, 볶아 먹어도 잘 어울려요"],
+      regular: 28000,
+      sale: 19900,
+    },
+    {
+      id: "doenjang",
+      name: "산삼된장",
+      volume: "500g",
+      image: "images/doenjang.jpg",
+      fallback: "jar-doen",
+      tag: "",
+      sub: "구수하게 우러나는, 산삼을 더한 된장",
+      bullets: ["된장찌개·된장국·쌈장에", "나물 무침에 한 숟가락"],
+      regular: 25000,
+      sale: 17900,
+    },
+  ],
+
+  // 주문 옵션 (단품 + 세트). items 는 위 products id 기준 수량
+  options: [
+    { id: "g1",  name: "산삼고추장 500g",                items: { gochujang: 1 } },
+    { id: "d1",  name: "산삼된장 500g",                  items: { doenjang: 1 } },
+    { id: "gd",  name: "고추장+된장 세트",   best: true, items: { gochujang: 1, doenjang: 1 }, price: 34900, desc: "가장 많이 찾는 구성" },
+    { id: "gd2", name: "고추장 2+된장 2 선물세트",        items: { gochujang: 2, doenjang: 2 }, price: 66000, desc: "명절·감사 선물용" },
+  ],
+  maxQty: 20,
+
+  story: {
+    title: "청남대 자락에서 빚은 장",
+    sub: "좋은 재료와 기다림으로 만듭니다.",
+    points: [
+      { h: "산삼을 더했습니다", p: "청남대 웰니스타운의 산삼을 넣어 장 맛에 은은한 향을 더했습니다." },
+      { h: "천천히 숙성했습니다", p: "서두르지 않고 충분히 숙성해 깊고 부드러운 맛을 냈습니다." },
+      { h: "행사 기간 한정 가격", p: "온라인 상시 판매가보다 낮은 가격을 이번 기간에만 드립니다." },
+    ],
+  },
+
+  uses: [
+    { ico: "🍚", b: "비빔밥", s: "산삼고추장 한 숟가락" },
+    { ico: "🍲", b: "된장찌개", s: "산삼된장으로 구수하게" },
+    { ico: "🥬", b: "쌈장", s: "고추장+된장 1:2" },
+    { ico: "🥘", b: "제육·떡볶이", s: "양념 베이스로" },
+  ],
+
+  steps: [
+    { h: "구성 선택", p: "원하는 상품과 수량을 고르면 금액이 자동으로 계산됩니다." },
+    { h: "주문서 보내기", p: "‘주문서 작성하기’를 누르면 주문 내용이 복사됩니다. 받는 분·연락처·주소를 적어 보내 주세요." },
+    { h: "입금 후 발송", p: "입금이 확인되면 순차적으로 발송하고 송장번호를 안내해 드립니다." },
+  ],
+
+  // 상품정보 고시 (식품 등의 표시·광고 기준에 맞게 실제 라벨 내용으로 채우세요)
+  productInfo: {
+    gochujang: [
+      ["식품의 유형", "[입력 필요]"],
+      ["내용량", "500g"],
+      ["원재료명 및 함량", "[입력 필요 — 라벨 그대로]"],
+      ["알레르기 유발물질", "[입력 필요]"],
+      ["소비기한", "[입력 필요]"],
+      ["보관방법", "[입력 필요]"],
+      ["제조원 / 소재지", "[입력 필요]"],
+    ],
+    doenjang: [
+      ["식품의 유형", "[입력 필요]"],
+      ["내용량", "500g"],
+      ["원재료명 및 함량", "[입력 필요 — 라벨 그대로]"],
+      ["알레르기 유발물질", "[입력 필요]"],
+      ["소비기한", "[입력 필요]"],
+      ["보관방법", "[입력 필요]"],
+      ["제조원 / 소재지", "[입력 필요]"],
+    ],
+  },
+
+  faq: [
+    { q: "스마트스토어에서 사는 것과 무엇이 다른가요?", a: "같은 제품을 행사 기간에만 더 낮은 가격으로 드리는 별도 행사입니다. 행사 주문은 이 페이지의 주문 방법으로만 받습니다." },
+    { q: "언제 발송되나요?", a: "입금 확인 후 영업일 기준 1~3일 안에 발송합니다. 주문이 몰리면 조금 늦어질 수 있습니다." },
+    { q: "선물용 포장이 되나요?", a: "선물세트 구성은 선물용 포장으로 보내 드립니다. 받는 분 주소로 바로 보내실 수 있습니다." },
+    { q: "교환·반품은 어떻게 하나요?", a: "식품 특성상 개봉 후에는 단순 변심 교환·반품이 어렵습니다. 파손·오배송은 받으신 날로부터 7일 안에 사진과 함께 연락 주세요." },
+  ],
+
+  notice: [
+    { h: "배송 안내", items: ["택배 발송 (제주·도서산간 추가 배송비가 있을 수 있습니다)", "행사 기간 이후 주문은 행사가가 적용되지 않습니다."] },
+    { h: "교환·반품 안내", items: ["상품 하자·오배송 시 배송비는 판매자가 부담합니다.", "개봉·섭취한 상품은 교환·반품이 어렵습니다."] },
+  ],
+
+  // 사업자 정보 (전자상거래법상 표시 필요)
+  business: [
+    ["상호", "[입력 필요]"],
+    ["대표자", "[입력 필요]"],
+    ["사업자등록번호", "[입력 필요]"],
+    ["통신판매업 신고번호", "[입력 필요]"],
+    ["주소", "[입력 필요]"],
+    ["고객센터", "[입력 필요]"],
+  ],
+};
+/* ========================= CONFIG 끝 ========================= */
+
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const won = (n) => n.toLocaleString("ko-KR") + "원";
+  const pct = (reg, sale) => Math.round((1 - sale / reg) * 100);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const productById = Object.fromEntries(CONFIG.products.map((p) => [p.id, p]));
+
+  // 옵션별 정가/판매가 계산 (price 가 없으면 단품 판매가 합)
+  CONFIG.options.forEach((o) => {
+    o.regular = Object.entries(o.items).reduce((s, [id, q]) => s + productById[id].regular * q, 0);
+    o.sale = o.price ?? Object.entries(o.items).reduce((s, [id, q]) => s + productById[id].sale * q, 0);
+  });
+
+  const start = new Date(CONFIG.startAt);
+  const end = new Date(CONFIG.endAt);
+  const fmtDate = (d) => `${d.getMonth() + 1}월 ${d.getDate()}일(${"일월화수목금토"[d.getDay()]})`;
+
+  // 기본 텍스트
+  $("draftBanner").hidden = !CONFIG.draft;
+  $("brandName").textContent = CONFIG.brand;
+  $("heroLead").textContent = CONFIG.heroLead;
+  $("periodText").textContent = `행사 기간 ${fmtDate(start)} ~ ${fmtDate(end)} ${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}까지`;
+  $("maxPct").textContent = Math.max(...CONFIG.options.map((o) => pct(o.regular, o.sale))) + "%";
+  $("storyTitle").textContent = CONFIG.story.title;
+  $("storySub").textContent = CONFIG.story.sub;
+  $("footBrand").textContent = CONFIG.brand;
+  $("footCopy").textContent = CONFIG.brand;
+  $("year").textContent = new Date().getFullYear();
+
+  // 상품 카드
+  $("productList").innerHTML = CONFIG.products.map((p) => `
+    <article class="card">
+      <div class="thumb">
+        ${p.tag ? `<span class="tag">${esc(p.tag)}</span>` : ""}
+        <svg viewBox="0 0 200 240" aria-hidden="true"><use href="#${esc(p.fallback)}"/></svg>
+        <img src="${esc(p.image)}" alt="${esc(p.name)} ${esc(p.volume)}" loading="lazy" onerror="this.remove()">
+      </div>
+      <div class="body">
+        <h3>${esc(p.name)} <small style="font-size:15px;color:var(--ink-soft)">${esc(p.volume)}</small></h3>
+        <p class="sub">${esc(p.sub)}</p>
+        <ul>${p.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>
+        <div class="price">
+          <span class="pct">${pct(p.regular, p.sale)}%</span>
+          <span class="now">${p.sale.toLocaleString("ko-KR")}<small>원</small></span>
+          <span class="was">${won(p.regular)}</span>
+        </div>
+      </div>
+    </article>`).join("");
+
+  // 스토리 / 활용
+  $("storyPoints").innerHTML = CONFIG.story.points.map((pt, i) => `
+    <div class="point"><div class="num">0${i + 1}</div><h3>${esc(pt.h)}</h3><p>${esc(pt.p)}</p></div>`).join("");
+  $("useList").innerHTML = CONFIG.uses.map((u) => `
+    <div class="use"><div class="ico">${u.ico}</div><b>${esc(u.b)}</b><span>${esc(u.s)}</span></div>`).join("");
+  $("stepList").innerHTML = CONFIG.steps.map((s) => `
+    <div class="step"><h3>${esc(s.h)}</h3><p>${esc(s.p)}</p></div>`).join("");
+
+  // 계좌
+  if (CONFIG.bank) {
+    $("bankBox").hidden = false;
+    $("bankText").textContent = CONFIG.bank;
+    $("copyBank").onclick = () => copy(CONFIG.bank, "계좌번호가 복사되었습니다.");
+  }
+  if (CONFIG.phone) {
+    $("phoneBtn").hidden = false;
+    $("phoneBtn").href = "tel:" + CONFIG.phone.replace(/[^0-9+]/g, "");
+    $("phoneBtn").textContent = "📞 전화 주문 " + CONFIG.phone;
+    $("phoneBtn").style.cssText = "width:100%;margin-top:8px";
+  }
+
+  // 상품정보 탭
+  $("infoTabs").innerHTML = CONFIG.products.map((p, i) =>
+    `<button role="tab" aria-selected="${i === 0}" data-id="${p.id}">${esc(p.name)}</button>`).join("");
+  const showInfo = (id) => {
+    $("infoPanel").innerHTML = `<table class="info">${(CONFIG.productInfo[id] || []).map(([k, v]) =>
+      `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("")}</table>`;
+    $("infoTabs").querySelectorAll("button").forEach((b) => b.setAttribute("aria-selected", b.dataset.id === id));
+  };
+  $("infoTabs").onclick = (e) => { const b = e.target.closest("button"); if (b) showInfo(b.dataset.id); };
+  showInfo(CONFIG.products[0].id);
+
+  // FAQ / 안내 / 사업자
+  $("faqList").innerHTML = CONFIG.faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("");
+  $("noticeBox").innerHTML = CONFIG.notice.map((n) => `<h3>${esc(n.h)}</h3><ul>${n.items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`).join("");
+  $("bizInfo").innerHTML = CONFIG.business.map(([k, v]) => `<div>${esc(k)} : ${esc(v)}</div>`).join("");
+
+  // ---------------- 주문 계산 ----------------
+  const qty = Object.fromEntries(CONFIG.options.map((o) => [o.id, 0]));
+  $("optionList").innerHTML = CONFIG.options.map((o) => `
+    <div class="opt" id="opt-${o.id}">
+      <div class="info">
+        <div class="name">${esc(o.name)} ${o.best ? '<span class="best">추천</span>' : ""}</div>
+        ${o.desc ? `<div class="desc">${esc(o.desc)}</div>` : ""}
+        <div class="p"><span style="color:var(--gochu);font-weight:900">${pct(o.regular, o.sale)}%</span> <b>${won(o.sale)}</b><s>${won(o.regular)}</s></div>
+      </div>
+      <div class="qty hide-when-ended">
+        <button type="button" data-id="${o.id}" data-d="-1" aria-label="${esc(o.name)} 수량 빼기">−</button>
+        <output id="q-${o.id}">0</output>
+        <button type="button" data-id="${o.id}" data-d="1" aria-label="${esc(o.name)} 수량 더하기">+</button>
+      </div>
+    </div>`).join("");
+  $("optionList").onclick = (e) => {
+    const b = e.target.closest("button[data-id]");
+    if (!b || state() !== "live") return;
+    const id = b.dataset.id;
+    qty[id] = Math.min(CONFIG.maxQty, Math.max(0, qty[id] + Number(b.dataset.d)));
+    render();
+  };
+
+  function totals() {
+    const lines = CONFIG.options.filter((o) => qty[o.id] > 0).map((o) => ({ o, q: qty[o.id], sum: o.sale * qty[o.id], reg: o.regular * qty[o.id] }));
+    const goods = lines.reduce((s, l) => s + l.sum, 0);
+    const reg = lines.reduce((s, l) => s + l.reg, 0);
+    const ship = goods === 0 ? 0 : (CONFIG.freeShippingOver && goods >= CONFIG.freeShippingOver ? 0 : CONFIG.shippingFee);
+    return { lines, goods, ship, save: reg - goods, total: goods + ship };
+  }
+
+  function render() {
+    const t = totals();
+    CONFIG.options.forEach((o) => {
+      $("q-" + o.id).textContent = qty[o.id];
+      $("opt-" + o.id).classList.toggle("on", qty[o.id] > 0);
+    });
+    $("sumLines").innerHTML = t.lines.length
+      ? t.lines.map((l) => `<li><span>${esc(l.o.name)} × ${l.q}</span><span>${won(l.sum)}</span></li>`).join("")
+      : "<li>선택한 상품이 없습니다.</li>";
+    $("sumGoods").textContent = won(t.goods);
+    $("sumShip").textContent = t.goods === 0 ? "0원" : (t.ship === 0 ? "무료" : won(t.ship));
+    $("sumSave").textContent = "−" + won(t.save);
+    $("sumSaveRow").style.display = t.save > 0 ? "" : "none";
+    $("sumTotal").textContent = won(t.total);
+    $("bbTotal").textContent = "주문 금액 " + won(t.total);
+    const left = CONFIG.freeShippingOver - t.goods;
+    $("shipHint").textContent = !CONFIG.freeShippingOver ? `배송비 ${won(CONFIG.shippingFee)}`
+      : left > 0 ? `${won(left)} 더 담으면 무료배송!` : "무료배송이 적용되었습니다 🎉";
+    $("orderBtn").disabled = t.goods === 0 || state() !== "live";
+  }
+
+  function orderText() {
+    const t = totals();
+    return [
+      `[${CONFIG.brand} 특가 행사 주문]`,
+      ...t.lines.map((l) => `- ${l.o.name} × ${l.q} = ${won(l.sum)}`),
+      `상품 합계: ${won(t.goods)}`,
+      `배송비: ${t.ship === 0 ? "무료" : won(t.ship)}`,
+      `총 결제금액: ${won(t.total)}`,
+      ``,
+      `받는 분: `,
+      `연락처: `,
+      `주소: `,
+      `입금자명: `,
+      `요청사항: `,
+    ].join("\n");
+  }
+
+  let copiedTimer;
+  function copy(text, msg) {
+    const done = () => { $("copied").textContent = msg; clearTimeout(copiedTimer); copiedTimer = setTimeout(() => ($("copied").textContent = ""), 4000); };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+    } else fallbackCopy(text, done);
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;opacity:0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { window.prompt("아래 주문 내용을 복사해 주세요", text); }
+    ta.remove();
+  }
+
+  $("orderBtn").onclick = () => {
+    const target = CONFIG.kakaoUrl || CONFIG.orderUrl;
+    copy(orderText(), target
+      ? "주문 내용이 복사되었습니다. 열린 창에 붙여넣고 받는 분 정보를 적어 보내 주세요."
+      : "주문 내용이 복사되었습니다. 문자나 메신저로 붙여넣어 보내 주세요.");
+    if (target) window.open(target, "_blank", "noopener");
+  };
+  $("orderBtn").textContent = CONFIG.kakaoUrl ? "카카오톡으로 주문하기" : "주문서 작성하기";
+  if (CONFIG.kakaoUrl) $("orderBtn").classList.replace("btn-primary", "btn-kakao");
+
+  // ---------------- 카운트다운 ----------------
+  function state() {
+    const now = Date.now();
+    if (now < start) return "before";
+    if (now > end) return "ended";
+    return "live";
+  }
+  function tick() {
+    const s = state();
+    const target = s === "before" ? start : end;
+    let diff = Math.max(0, target - Date.now());
+    const d = Math.floor(diff / 864e5); diff %= 864e5;
+    const h = Math.floor(diff / 36e5); diff %= 36e5;
+    const m = Math.floor(diff / 6e4);
+    const sec = Math.floor((diff % 6e4) / 1e3);
+    const pad = (n) => String(n).padStart(2, "0");
+    $("cdD").textContent = d; $("cdH").textContent = pad(h); $("cdM").textContent = pad(m); $("cdS").textContent = pad(sec);
+    const leftTxt = d > 0 ? `${d}일 ${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(h)}:${pad(m)}:${pad(sec)}`;
+
+    if (s === "before") {
+      $("cdLabel").textContent = "특가 오픈까지";
+      $("topbarLeft").textContent = "오픈까지 " + leftTxt;
+      $("bbLabel").textContent = "오픈까지 " + leftTxt;
+      $("orderSub").textContent = `${fmtDate(start)}에 주문이 열립니다.`;
+    } else if (s === "live") {
+      $("cdLabel").textContent = "특가 종료까지";
+      $("topbarLeft").textContent = "종료까지 " + leftTxt;
+      $("bbLabel").textContent = "특가 종료까지 " + leftTxt;
+      $("orderSub").textContent = "수량을 고르면 결제 금액이 바로 계산됩니다.";
+    } else {
+      document.body.classList.add("ended");
+      $("countdownBox").style.display = "none";
+      $("topbarLeft").textContent = "행사가 종료되었습니다";
+      $("orderSub").textContent = "이번 특가 행사는 종료되었습니다. 성원에 감사드립니다.";
+      $("orderBtn").textContent = "행사 종료";
+    }
+    $("orderBtn").disabled = totals().goods === 0 || s !== "live";
+  }
+  render();
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
