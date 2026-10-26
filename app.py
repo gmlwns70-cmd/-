@@ -11,7 +11,7 @@ import streamlit as st
 from PIL import Image
 
 from core import assets, pipeline, render, research, script, subtitles, tts
-from core.config import KEY_INFO, UserFacingError, find_ffmpeg, key_status, load_config
+from core.config import ENV_PATH, KEY_INFO, UserFacingError, env_file_problem, find_ffmpeg, key_status, load_config
 from core.project import STAGE_LABELS, STAGES, Project
 
 st.set_page_config(page_title="유튜브 영상 자동 제작", page_icon="🎬", layout="wide")
@@ -131,7 +131,9 @@ with st.sidebar:
     st.subheader("🔑 API 키 상태")
     for k, ok in key_status().items():
         st.write(f"{'✅' if ok else '❌'} {KEY_INFO[k][0]} — {KEY_INFO[k][1]}")
-    st.caption("키는 .env 파일에 넣고 프로그램을 다시 켜면 적용돼요.")
+    st.caption(f"키는 `{ENV_PATH}` 파일에 넣고 저장한 뒤 새로고침(F5)하면 적용돼요.")
+    if env_file_problem():
+        st.warning(env_file_problem())
     st.divider()
     st.write("✅ ffmpeg" if find_ffmpeg() else "❌ ffmpeg 없음 (README 참고)")
     fw = subtitles.font_warning()

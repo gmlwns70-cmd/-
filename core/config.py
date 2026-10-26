@@ -18,7 +18,22 @@ FONTS_DIR = ROOT / "fonts"
 PROMPTS_DIR = ROOT / "prompts"
 PROJECTS_DIR = ROOT / "projects"
 
-load_dotenv(ROOT / ".env")
+ENV_PATH = ROOT / ".env"
+load_dotenv(ENV_PATH)
+
+
+def reload_env() -> None:
+    """.env를 다시 읽어서, 키를 바꾼 뒤 새로고침(F5)만 해도 적용되게 합니다."""
+    load_dotenv(ENV_PATH, override=True)
+
+
+def env_file_problem() -> str | None:
+    """.env 파일이 없거나 이름이 잘못 저장된 경우 안내 문구."""
+    if ENV_PATH.exists():
+        return None
+    if (ROOT / ".env.txt").exists():
+        return "⚠️ `.env.txt` 로 저장돼 있어요. 파일 이름 끝의 `.txt` 를 지워서 `.env` 로 바꿔 주세요."
+    return f"⚠️ `.env` 파일이 없어요. `.env.example` 을 복사해서 이름을 `.env` 로 바꿔 주세요. (위치: {ROOT})"
 
 DEFAULTS: dict = {
     "claude": {"model": "claude-sonnet-5-5", "effort": "high", "use_fallback": True,
@@ -78,6 +93,7 @@ def get_key(name: str, required: bool = True) -> str | None:
 
 
 def key_status() -> dict[str, bool]:
+    reload_env()
     return {name: bool(get_key(name, required=False)) for name in KEY_INFO}
 
 
