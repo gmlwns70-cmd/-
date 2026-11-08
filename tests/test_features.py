@@ -64,3 +64,32 @@ def test_transitions_keep_total_length(tmp_project, transition):
         if transition == "black":
             # 두 장면 경계(2.35초) 근처는 검게 페이드
             assert v.get_frame(2.34).mean() < v.get_frame(1.0).mean()
+
+
+# ---------- 홈 대시보드 ----------
+def test_dashboard_summary_and_overview(tmp_path):
+    from datetime import datetime
+
+    from core import dashboard
+    from core.project import Project
+
+    base = tmp_path / "projects"
+    new = Project.create("새 주제", base_dir=base)
+    review = Project.create("확인 대기", base_dir=base)
+    review.save_script({"title": "대본 제목", "scenes": []})
+    review.set_status("awaiting_review")
+    done = Project.create("완성", base_dir=base)
+    done.save_scenes({"scenes": [{"duration": 60.0}, {"duration": 30.5}]})
+    for s in dashboard.PRODUCTION_STAGES:
+        done.mark_done(s)
+    done.final_video.write_bytes(b"x")
+
+    sums = {s.topic: s for s in map(dashboard.summarize, Project.list_all(base))}
+    assert sums["새 주제"].status == "🆕 시작 전" and sums["새 주제"].done_steps == 0
+    assert sums["확인 대기"].status == "⏸️ 대본 확인 대기"
+    assert sums["완성"].status == "✅ 완성" and sums["완성"].done_steps == 5
+    assert dashboard.fmt_duration(sums["완성"].video_seconds) == "1분 30초"
+
+    ov = dashboard.overview(list(sums.values()), now=datetime.now())
+    assert ov == {"total": 3, "done": 1, "in_progress": 2, "this_month": 1,
+                  "total_minutes": 90.5 / 60, "shorts": 0}

@@ -11,7 +11,7 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 
-from core import assets, pipeline, render, research, script, subtitles, thumbnail, tts
+from core import assets, dashboard, pipeline, render, research, script, subtitles, thumbnail, tts
 from core.config import ENV_PATH, KEY_INFO, UserFacingError, env_file_problem, find_ffmpeg, key_status, load_config
 from core.project import STAGE_LABELS, STAGES, Project
 
@@ -117,22 +117,36 @@ def render_widgets(prefix: str, proj: Project | None) -> dict:
             "transition": transition, "transition_seconds": trans_sec, "thumb_theme": thumb_theme}
 
 
+NEW_PROJECT = "➕ 새 프로젝트 만들기"
+
+
+def open_project(name: str) -> None:
+    """버튼 콜백: 사이드바에서 이 프로젝트가 선택되도록 합니다."""
+    st.session_state["project_select"] = name
+    st.session_state["project_name"] = name
+
+
+def create_project() -> None:
+    topic = st.session_state.get("new_topic", "").strip()
+    if topic:
+        open_project(Project.create(topic).name)
+        st.session_state["new_topic"] = ""
+
+
 # ---------------- 사이드바 ----------------
 with st.sidebar:
     st.title("🎬 영상 자동 제작")
     projects = Project.list_all()
     names = [p.name for p in projects]
-    NEW = "➕ 새 프로젝트 만들기"
-    cur = st.session_state.get("project_name")
-    choice = st.selectbox("프로젝트", [NEW] + names, index=(names.index(cur) + 1) if cur in names else 0)
-    if choice == NEW:
-        new_topic = st.text_input("영상 주제", placeholder="예: 집에서 카페 라떼 만들기")
-        if st.button("프로젝트 만들기", type="primary", disabled=not new_topic.strip()):
-            p = Project.create(new_topic)
-            st.session_state["project_name"] = p.name
-            st.rerun()
-        if cur:
-            st.session_state["project_name"] = None
+    options = [NEW_PROJECT] + names
+    if st.session_state.get("project_select") not in options:
+        cur = st.session_state.get("project_name")
+        st.session_state["project_select"] = cur if cur in names else NEW_PROJECT
+    choice = st.selectbox("프로젝트", options, key="project_select")
+    if choice == NEW_PROJECT:
+        new_topic = st.text_input("영상 주제", placeholder="예: 집에서 카페 라떼 만들기", key="new_topic")
+        st.button("프로젝트 만들기", type="primary", disabled=not new_topic.strip(), on_click=create_project)
+        st.session_state["project_name"] = None
     else:
         st.session_state["project_name"] = choice
 
@@ -154,10 +168,55 @@ with st.sidebar:
     fw = subtitles.font_warning()
     st.write(fw if fw else f"✅ 폰트: {subtitles.find_font(CFG['subtitles'].get('font_file', '')).name}")
 
-tabs = st.tabs(["① 리서치", "② 대본", "③ 내레이션", "④ 소재", "⑤ 자막", "⑥ 렌더링", "⑦ 전체 자동 실행"])
+tabs = st.tabs(["🏠 홈", "① 리서치", "② 대본", "③ 내레이션", "④ 소재", "⑤ 자막", "⑥ 렌더링", "⑦ 전체 자동 실행"])
+
+# ---------------- 🏠 홈 대시보드 ----------------
+with tabs[0]:
+    st.header("🏠 한눈에 보기")
+    summaries = [dashboard.summarize(p) for p in Project.list_all()]
+    ov = dashboard.overview(summaries)
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("전체 프로젝트", f"{ov['total']}개")
+    m2.metric("완성된 영상", f"{ov['done']}편", help=f"그중 쇼츠도 만든 영상 {ov['shorts']}편")
+    m3.metric("이번 달 완성", f"{ov['this_month']}편")
+    m4.metric("완성 영상 총 길이", f"{ov['total_minutes']:.1f}분")
+
+    if not summaries:
+        st.info("아직 프로젝트가 없어요. 👈 왼쪽 사이드바에서 **영상 주제**를 입력하고 **프로젝트 만들기**를 눌러 시작하세요.")
+
+    working = [s for s in summaries if not s.is_done]
+    if working:
+        st.subheader("🔄 진행 중인 프로젝트")
+        st.caption("'열기'를 누르면 왼쪽 사이드바에서 그 프로젝트가 선택돼요. 그다음 ⑦ 탭에서 이어서 진행하세요.")
+        for s in working:
+            with st.container(border=True):
+                c1, c2, c3 = st.columns([4, 3, 1])
+                c1.markdown(f"**{s.topic}**  \n{s.title or '대본 전'}")
+                c1.caption(f"{s.status} · 다음 단계: {s.next_label}"
+                           + (f" · 마지막 작업 {s.updated:%m/%d %H:%M}" if s.updated else ""))
+                c2.progress(s.done_steps / s.total_steps, text=f"{s.done_steps}/{s.total_steps} 단계 완료")
+                c3.button("열기", key=f"open_{s.name}", on_click=open_project, args=(s.name,))
+
+    done = [s for s in summaries if s.is_done]
+    if done:
+        st.subheader("🎬 완성된 영상")
+        for row in range(0, len(done), 3):
+            cols = st.columns(3)
+            for col, s in zip(cols, done[row:row + 3]):
+                with col.container(border=True):
+                    if s.thumbnail:
+                        st.image(str(s.thumbnail))
+                    else:
+                        st.caption("🖼️ 썸네일 없음 — ⑥ 렌더링 탭에서 만들 수 있어요")
+                    st.markdown(f"**{s.title or s.topic}**")
+                    st.caption(f"⏱️ {dashboard.fmt_duration(s.video_seconds)}"
+                               + (" · 📱 쇼츠 있음" if s.shorts_video else "")
+                               + (f" · {s.updated:%Y-%m-%d}" if s.updated else ""))
+                    st.caption(f"📁 projects/{s.name}/output")
+                    st.button("열기", key=f"open_done_{s.name}", on_click=open_project, args=(s.name,))
 
 # ---------------- ① 리서치 ----------------
-with tabs[0]:
+with tabs[1]:
     st.header("① 트렌드 리서치")
     st.caption("유튜브의 숫자 정보(조회수·구독자·게시일·제목)만 봅니다. 영상 내용은 가져오지 않아요. "
                "'배율'이 높을수록 작은 채널도 조회수가 잘 나온 = 수요가 큰 주제예요.")
@@ -192,7 +251,7 @@ with tabs[0]:
             st.caption("💡 이 단어들은 '수요 파악'용 참고 자료예요. 다른 영상의 내용을 따라 하지 말고 나만의 관점으로 대본을 만드세요.")
 
 # ---------------- ② 대본 ----------------
-with tabs[1]:
+with tabs[2]:
     st.header("② 대본 생성")
     proj = need_project()
     if proj:
@@ -222,13 +281,13 @@ with tabs[1]:
         if data:
             st.divider()
             c1, c2 = st.columns(2)
-            title = c1.text_input("제목", data["title"])
-            thumb = c2.text_input("썸네일 문구", data["thumbnail_text"])
-            desc = st.text_area("설명란", data["description"], height=100)
-            tags = st.text_input("태그 (쉼표로 구분)", ", ".join(data["tags"]))
+            title = c1.text_input("제목", data.get("title", ""))
+            thumb = c2.text_input("썸네일 문구", data.get("thumbnail_text", ""))
+            desc = st.text_area("설명란", data.get("description", ""), height=100)
+            tags = st.text_input("태그 (쉼표로 구분)", ", ".join(data.get("tags", [])))
             st.caption("표 안의 칸을 더블클릭하면 고칠 수 있어요. 맨 아래 빈 줄에 장면을 추가하거나, 왼쪽 칸을 선택해 삭제할 수 있어요.")
             edited = st.data_editor(
-                pd.DataFrame(script.scenes_to_rows(data["scenes"])), num_rows="dynamic", width="stretch",
+                pd.DataFrame(script.scenes_to_rows(data.get("scenes", [])), columns=script.EDITOR_COLUMNS), num_rows="dynamic", width="stretch",
                 hide_index=True, key=f"editor_{proj.name}_{st.session_state.get('editor_ver', 0)}",
                 column_config={
                     "id": st.column_config.NumberColumn("번호", disabled=True, width="small"),
@@ -255,7 +314,7 @@ with tabs[1]:
                     st.rerun()
 
 # ---------------- ③ 내레이션 ----------------
-with tabs[2]:
+with tabs[3]:
     st.header("③ 내레이션 (AI 음성)")
     proj = need_project()
     if proj:
@@ -277,15 +336,15 @@ with tabs[2]:
         data = proj.load_scenes()
         if data:
             st.dataframe(pd.DataFrame([{"번호": s["id"], "길이(초)": s["duration"], "내레이션": s["narration"]}
-                                       for s in data["scenes"]]), hide_index=True, width="stretch")
+                                       for s in data.get("scenes", [])]), hide_index=True, width="stretch")
             with st.expander("장면별로 들어보기"):
-                for s in data["scenes"]:
+                for s in data.get("scenes", []):
                     if s.get("audio"):
                         st.write(f"**장면 {s['id']}** — {s['narration'][:40]}…")
                         st.audio(str(proj.path / s["audio"]))
 
 # ---------------- ④ 소재 ----------------
-with tabs[3]:
+with tabs[4]:
     st.header("④ 소재 매칭")
     st.caption("① 내 소재(assets/my_footage) → ② 허락 소재(assets/licensed, 허락 메모 필수) → ③ Pexels/Pixabay 무료 스톡 순서로 찾아요.")
     proj = need_project()
@@ -300,17 +359,17 @@ with tabs[3]:
                     st.warning(w)
                 st.success("소재 매칭 완료!")
         data = proj.load_scenes()
-        if data and any(s.get("media") for s in data["scenes"]):
+        if data and any(s.get("media") for s in data.get("scenes", [])):
             src_name = {"my": "📷 내 소재", "licensed": "🤝 허락 소재", "pexels": "Pexels", "pixabay": "Pixabay", "none": "단색 배경"}
             rows = []
-            for s in data["scenes"]:
+            for s in data.get("scenes", []):
                 for m in s.get("media", []):
                     rows.append({"장면": s["id"], "출처": src_name.get(m["source"], m["source"]),
                                  "종류": {"video": "영상", "image": "사진", "color": "-"}[m["kind"]],
                                  "파일": m["path"].replace("\\", "/").split("/")[-1], "작가": m.get("author", "")})
             st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
             with st.expander("소재 미리보기"):
-                for s in data["scenes"]:
+                for s in data.get("scenes", []):
                     m = (s.get("media") or [{}])[0]
                     if m.get("kind") in ("video", "image"):
                         p = assets.resolve_path(proj, m["path"])
@@ -321,7 +380,7 @@ with tabs[3]:
             st.text_area("credits.txt", proj.credits_path.read_text(encoding="utf-8"), height=180)
 
 # ---------------- ⑤ 자막 ----------------
-with tabs[4]:
+with tabs[5]:
     st.header("⑤ 자막")
     proj = need_project()
     if proj:
@@ -396,7 +455,7 @@ with tabs[4]:
             st.download_button("⬇️ SRT 저장", srt.encode("utf-8"), file_name="subtitles.srt")
 
 # ---------------- ⑥ 렌더링 ----------------
-with tabs[5]:
+with tabs[6]:
     st.header("⑥ 영상 조립 (렌더링)")
     proj = need_project()
     if proj:
@@ -454,12 +513,12 @@ with tabs[5]:
         if data and proj.final_video.exists():
             st.subheader("📋 업로드할 때 복사해서 쓰세요")
             credits = proj.credits_path.read_text(encoding="utf-8") if proj.credits_path.exists() else ""
-            st.text_input("제목", data["title"], key="up_title")
+            st.text_input("제목", data.get("title", ""), key="up_title")
             st.text_area("설명란", f"{data['description']}\n\n{credits}", height=220, key="up_desc")
-            st.text_input("태그", ", ".join(data["tags"]), key="up_tags")
+            st.text_input("태그", ", ".join(data.get("tags", [])), key="up_tags")
 
 # ---------------- ⑦ 전체 자동 실행 ----------------
-with tabs[6]:
+with tabs[7]:
     st.header("⑦ 전체 자동 실행")
     st.caption("대본 → (확인) → 내레이션 → 소재 → 자막 → 렌더링을 차례로 실행해요. 이미 끝난 단계는 건너뛰어서 중간부터 이어서 할 수 있어요.")
     proj = need_project()
@@ -484,9 +543,9 @@ with tabs[6]:
             if state.get("status") == "awaiting_review" and not proj.is_done("script"):
                 st.info("⏸️ 대본을 확인해 주세요. 고칠 곳이 있으면 **② 대본 탭**에서 수정 후 '저장하고 확정'을 누르세요. "
                         "그대로 괜찮으면 아래 버튼을 누르면 돼요.")
-            with st.expander(f"📜 {data['title']} (장면 {len(data['scenes'])}개)", expanded=not proj.is_done("script")):
-                for s in data["scenes"]:
-                    st.markdown(f"**{s['id']}. [{s['type']}]** {s['narration']}")
+            with st.expander(f"📜 {data.get('title', '')} (장면 {len(data.get('scenes', []))}개)", expanded=not proj.is_done("script")):
+                for s in data.get("scenes", []):
+                    st.markdown(f"**{s.get('id')}. [{s.get('type')}]** {s.get('narration', '')}")
 
             st.subheader("3단계: 나머지 자동 실행")
             with st.expander("⚙️ 설정", expanded=False):
