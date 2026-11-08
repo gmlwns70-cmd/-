@@ -162,18 +162,54 @@
   /* ── 상담 버튼 ─────────────────────────────── */
   var c = S.contact, cs = S.contactSection;
   var kakaoReady = !isPlaceholder(c.kakaoUrl);
+  var kakaoId = isPlaceholder(c.kakaoId) ? '' : c.kakaoId;
   var phoneReady = !isPlaceholder(c.phone);
   var telHref = phoneReady ? 'tel:' + c.phone.replace(/[^0-9+]/g, '') : '#contact';
+  var kakaoIcon = '<svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.7 21l3.8-2.5c.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>';
+  var kakaoBtn;
+  if (kakaoReady) {
+    // 채널 주소가 있으면 대화창으로 바로 연결
+    kakaoBtn =
+      '<a class="btn btn-gold btn-lg" href="' + esc(c.kakaoUrl) + '" target="_blank" rel="noopener">' + kakaoIcon +
+        '<span>' + esc(cs.kakaoButton) + '<span class="sr-only"> (새 창에서 열림)</span>' +
+        (kakaoId ? ' <span class="btn-sub">' + esc(kakaoId) + '</span>' : '') + '</span>' +
+      '</a>';
+  } else if (kakaoId) {
+    // ID만 있으면 눌러서 복사
+    kakaoBtn =
+      '<button class="btn btn-gold btn-lg" type="button" data-copy="' + esc(kakaoId) + '">' + kakaoIcon +
+        '<span>' + esc(cs.kakaoButton) + ' <span class="btn-sub">ID ' + esc(kakaoId) + ' · 누르면 복사</span></span>' +
+      '</button>';
+  } else {
+    kakaoBtn =
+      '<a class="btn btn-gold btn-lg" href="#contact">' + kakaoIcon +
+        '<span>' + esc(cs.kakaoButton) + ' <span class="btn-sub">' + value(c.kakaoUrl) + '</span></span>' +
+      '</a>';
+  }
   $('#contact-actions').innerHTML =
-    '<a class="btn btn-gold btn-lg" href="' + (kakaoReady ? esc(c.kakaoUrl) : '#contact') + '"' +
-      (kakaoReady ? ' target="_blank" rel="noopener"' : '') + '>' +
-      '<svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.8 5.3 4.6 6.7L5.7 21l3.8-2.5c.8.1 1.6.2 2.5.2 5.5 0 10-3.6 10-8S17.5 3 12 3Z"/></svg>' +
-      '<span>' + esc(cs.kakaoButton) + (kakaoReady ? '<span class="sr-only"> (새 창에서 열림)</span>' : '') + '</span>' +
-    '</a>' +
+    kakaoBtn +
     '<a class="btn btn-outline-light btn-lg" href="' + esc(telHref) + '">' +
       '<svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1Z"/></svg>' +
       '<span>' + esc(cs.phoneButton) + ' <span class="btn-sub">' + value(c.phone) + '</span></span>' +
-    '</a>';
+    '</a>' +
+    '<p class="copy-status" role="status" aria-live="polite"></p>';
+  var copyBtn = $('[data-copy]');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function () {
+      var id = copyBtn.getAttribute('data-copy');
+      var status = $('.copy-status');
+      function done(ok) {
+        status.textContent = ok
+          ? '카카오톡 ID ' + id + ' 가 복사되었습니다. 카카오톡 검색창에 붙여 넣어 주세요.'
+          : '카카오톡에서 ' + id + ' 를 검색해 주세요.';
+      }
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(id).then(function () { done(true); }, function () { done(false); });
+      } else {
+        done(false);
+      }
+    });
+  }
   $('#contact-hours').innerHTML = '상담 시간 ' + value(c.hours);
 
   /* ── 푸터 ─────────────────────────────────── */

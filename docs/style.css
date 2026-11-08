@@ -225,6 +225,8 @@ a { color: inherit; }
   border: 2px dashed #A8A398; border-radius: var(--radius);
 }
 .has-photo .photo-placeholder { display: none; }
+.hero .photo-frame img { object-position: 50% 30%; }
+.about-photo .photo-frame img { object-position: 50% 22%; }
 .hero .photo-frame { max-width: 460px; margin-left: auto; margin-right: auto; box-shadow: 0 24px 48px rgba(0, 0, 0, .25); }
 @media (max-width: 899px) { .hero .photo-frame { aspect-ratio: 4 / 3.4; } }
 
@@ -395,6 +397,8 @@ a { color: inherit; }
 @media (min-width: 640px) { .contact-actions { grid-template-columns: 1fr 1fr; } }
 .contact-actions .btn { justify-content: flex-start; text-align: left; padding-left: 24px; }
 .contact-hours { margin-top: 20px; color: var(--on-dark-2); }
+.copy-status { grid-column: 1 / -1; color: var(--gold); font-weight: 600; }
+.copy-status:empty { display: none; }
 
 /* ── 10. 푸터 ───────────────────────────────── */
 .site-footer {

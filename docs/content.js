@@ -22,10 +22,13 @@ window.SITE = {
 
   contact: {
     // 전화번호 예) "010-1234-5678"  (휴대폰에서 누르면 바로 전화가 걸립니다)
-    phone: "[연락처]",
+    phone: "010-4924-3435",
+    // 카카오톡 ID: 상담 버튼을 누르면 이 ID가 복사됩니다
+    kakaoId: "@wellness70",
     // 카카오톡 채널 주소 예) "https://pf.kakao.com/_xxxxxx"
+    // 채우면 버튼을 눌렀을 때 ID 복사 대신 채널 대화창이 바로 열립니다
     kakaoUrl: "[카카오톡 채널 주소]",
-    hours: "[상담 가능 시간]",
+    hours: "평일 오전 9시~오후 6시",
   },
 
   /* ── 첫 화면(히어로) ─────────────────────────── */
@@ -38,7 +41,7 @@ window.SITE = {
     secondaryButton: "작업 사례 보기",
     // 대표 사진: images 폴더에 이 이름으로 사진을 넣으면 자동으로 보입니다.
     photo: "images/ceo-hero.jpg",
-    photoAlt: "산양삼 농장에서 일하는 산마루랩 대표",
+    photoAlt: "산 아래 밭에서 채소 상자를 든 농부와 태블릿을 든 청년이 함께 웃고 있는 모습",
     photoPlaceholder: "[대표 사진]",
   },
 
@@ -221,7 +224,7 @@ window.SITE = {
       "농사일이 얼마나 바쁜지 알기에, 대표님이 쉽게 쓰고 오래 쓸 수 있는 것만 만듭니다.",
     ],
     photo: "images/ceo-about.jpg",
-    photoAlt: "산양삼을 손에 들고 있는 산마루랩 대표",
+    photoAlt: "산양삼 상자를 들고 작업장에 서 있는 산마루랩 대표",
     photoPlaceholder: "[대표 사진]",
   },
 
