@@ -46,6 +46,32 @@ def find_font(font_file: str = "", fonts_dir: Path = FONTS_DIR) -> Path | None:
     return None
 
 
+def list_fonts(fonts_dir: Path = FONTS_DIR) -> list[Path]:
+    """선택할 수 있는 한글 폰트 목록 (fonts 폴더 + 윈도우 기본 폰트)."""
+    found = []
+    if fonts_dir.exists():
+        found += sorted(p for p in fonts_dir.rglob("*") if p.suffix.lower() in (".ttf", ".otf", ".ttc"))
+    found += [Path(s) for s in SYSTEM_FONTS if Path(s).exists()]
+    return found
+
+
+# 자막 디자인 프리셋 (⑤ 자막 탭에서 고를 수 있어요)
+SUBTITLE_PRESETS: dict[str, dict] = {
+    "기본 (흰 글씨 + 검은 테두리)": {"color": "#FFFFFF", "stroke_color": "#000000", "stroke_width": 4,
+                                  "box_color": "", "shadow_color": "", "shadow_offset": 0},
+    "예능 (노란 글씨 + 두꺼운 테두리)": {"color": "#FFE14D", "stroke_color": "#000000", "stroke_width": 7,
+                                    "box_color": "", "shadow_color": "#000000", "shadow_offset": 5},
+    "반투명 검은 상자": {"color": "#FFFFFF", "stroke_color": "#000000", "stroke_width": 0,
+                    "box_color": "#000000A6", "shadow_color": "", "shadow_offset": 0},
+    "뉴스 (흰 상자 + 검은 글씨)": {"color": "#111111", "stroke_color": "#FFFFFF", "stroke_width": 0,
+                              "box_color": "#FFFFFFE6", "shadow_color": "", "shadow_offset": 0},
+    "깔끔한 그림자": {"color": "#FFFFFF", "stroke_color": "#000000", "stroke_width": 1,
+                "box_color": "", "shadow_color": "#000000C0", "shadow_offset": 4},
+    "핑크 포인트 테두리": {"color": "#FFFFFF", "stroke_color": "#FF3D7F", "stroke_width": 6,
+                    "box_color": "", "shadow_color": "#00000099", "shadow_offset": 3},
+}
+
+
 @lru_cache(maxsize=32)
 def _load_font(path: str | None, size: int):
     if path:
@@ -65,21 +91,28 @@ class SubtitleStyle:
     max_lines: int = 2
     line_spacing: float = 1.25
     box_color: str | None = None   # 예: "#000000AA" → 반투명 상자
+    shadow_color: str | None = None  # 예: "#000000C0" → 글자 아래 그림자
+    shadow_offset: int = 0
 
     @classmethod
     def from_config(cls, cfg: dict | None = None, **override) -> "SubtitleStyle":
         s = {**(cfg or load_config())["subtitles"], **override}
+        preset = SUBTITLE_PRESETS.get(s.get("preset") or "")
+        if preset:  # 프리셋 값 위에 사용자가 직접 바꾼 값을 덮어씀
+            s = {**s, **{k: v for k, v in preset.items() if k not in override}}
         font = find_font(s.get("font_file", ""))
         return cls(font_path=str(font) if font else None, font_size=int(s["font_size"]),
                    stroke_width=int(s["stroke_width"]), color=s["color"], stroke_color=s["stroke_color"],
                    bottom_margin_pct=float(s["bottom_margin_pct"]),
                    max_chars_per_line=int(s["max_chars_per_line"]), max_lines=int(s["max_lines"]),
-                   box_color=s.get("box_color"))
+                   box_color=s.get("box_color") or None, shadow_color=s.get("shadow_color") or None,
+                   shadow_offset=int(s.get("shadow_offset") or 0))
 
     def scaled(self, factor: float) -> "SubtitleStyle":
         from dataclasses import replace
         return replace(self, font_size=max(10, round(self.font_size * factor)),
-                       stroke_width=max(1, round(self.stroke_width * factor)) if self.stroke_width else 0)
+                       stroke_width=max(1, round(self.stroke_width * factor)) if self.stroke_width else 0,
+                       shadow_offset=max(1, round(self.shadow_offset * factor)) if self.shadow_offset else 0)
 
 
 def render_text_image(text: str, style: SubtitleStyle, max_width: int | None = None) -> Image.Image:
@@ -94,19 +127,29 @@ def render_text_image(text: str, style: SubtitleStyle, max_width: int | None = N
     if max_width:
         width = min(width, max_width)
     pad = int(style.font_size * 0.35) if style.box_color else 0
+    so = style.shadow_offset if style.shadow_color else 0
     height = line_h * (len(lines) - 1) + (boxes[-1][3] - min(0, boxes[-1][1])) + 2 * sw + 8
-    img = Image.new("RGBA", (width + 2 * pad, height + 2 * pad), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
+    img = Image.new("RGBA", (width + 2 * pad + so, height + 2 * pad + so), (0, 0, 0, 0))
     if style.box_color:
-        draw.rounded_rectangle([0, 0, img.width - 1, img.height - 1], radius=pad,
-                               fill=ImageColor.getrgb(style.box_color))
-    y = pad + sw + 4
-    for ln, b in zip(lines, boxes):
-        w = b[2] - b[0]
-        x = (img.width - w) // 2 - b[0]
-        draw.text((x, y - min(0, b[1])), ln, font=font, fill=style.color,
-                  stroke_width=sw, stroke_fill=style.stroke_color)
-        y += line_h
+        ImageDraw.Draw(img).rounded_rectangle([0, 0, img.width - 1 - so, img.height - 1 - so], radius=pad,
+                                              fill=ImageColor.getrgb(style.box_color))
+
+    def draw_lines(layer: Image.Image, dx: int, dy: int, fill, stroke_fill):
+        draw = ImageDraw.Draw(layer)
+        y = pad + sw + 4 + dy
+        for ln, b in zip(lines, boxes):
+            x = (img.width - so - (b[2] - b[0])) // 2 - b[0] + dx
+            draw.text((x, y - min(0, b[1])), ln, font=font, fill=fill, stroke_width=sw, stroke_fill=stroke_fill)
+            y += line_h
+
+    if so:
+        shadow = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        c = ImageColor.getrgb(style.shadow_color)
+        draw_lines(shadow, so, so, c, c)
+        img.alpha_composite(shadow)
+    text_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw_lines(text_layer, 0, 0, style.color, style.stroke_color)
+    img.alpha_composite(text_layer)
     return img
 
 

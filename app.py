@@ -5,12 +5,13 @@
 from __future__ import annotations
 
 import traceback
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 from PIL import Image
 
-from core import assets, pipeline, render, research, script, subtitles, tts
+from core import assets, pipeline, render, research, script, subtitles, thumbnail, tts
 from core.config import ENV_PATH, KEY_INFO, UserFacingError, env_file_problem, find_ffmpeg, key_status, load_config
 from core.project import STAGE_LABELS, STAGES, Project
 
@@ -97,9 +98,23 @@ def render_widgets(prefix: str, proj: Project | None) -> dict:
         burn = st.checkbox("자막을 영상에 직접 입히기", value=saved.get("burn_subtitles", True), key=f"{prefix}_burn",
                            help="끄면 자막 없는 영상 + SRT 파일이 만들어져요. (유튜브에 SRT를 따로 올릴 수 있어요)")
         shorts = st.checkbox("쇼츠(9:16, 60초 이내)도 만들기", value=saved.get("make_shorts", True), key=f"{prefix}_shorts")
+    c3, c4, c5 = st.columns([2, 1, 2])
+    trans_keys = list(render.TRANSITIONS)
+    default_trans = saved.get("transition") or CFG["render"].get("transition", "crossfade")
+    transition = c3.selectbox("장면 전환 효과", trans_keys, format_func=lambda k: render.TRANSITIONS[k],
+                              index=trans_keys.index(default_trans) if default_trans in trans_keys else 0,
+                              key=f"{prefix}_trans")
+    trans_sec = c4.slider("전환 시간(초)", 0.2, 1.2,
+                          float(saved.get("transition_seconds") or CFG["render"].get("transition_seconds", 0.5)),
+                          step=0.1, key=f"{prefix}_trans_sec", disabled=transition == "none")
+    themes = list(thumbnail.THEMES)
+    default_theme = saved.get("thumb_theme") or CFG["thumbnail"]["theme"]
+    thumb_theme = c5.selectbox("썸네일 색 조합", themes, key=f"{prefix}_thumb_theme",
+                               index=themes.index(default_theme) if default_theme in themes else 0)
     if not bgm_files:
         st.caption("ℹ️ assets/bgm 폴더에 음원이 없어서 배경음악 없이 만들어요.")
-    return {"bgm": bgm, "quality": quality, "burn_subtitles": burn, "make_shorts": shorts}
+    return {"bgm": bgm, "quality": quality, "burn_subtitles": burn, "make_shorts": shorts,
+            "transition": transition, "transition_seconds": trans_sec, "thumb_theme": thumb_theme}
 
 
 # ---------------- 사이드바 ----------------
@@ -311,22 +326,54 @@ with tabs[4]:
     proj = need_project()
     if proj:
         saved = proj.get_settings()
-        sty = {**CFG["subtitles"], **(saved.get("sub_style") or {})}
+        saved_style = saved.get("sub_style") or {}
+        presets = list(subtitles.SUBTITLE_PRESETS)
+        default_preset = saved_style.get("preset") or CFG["subtitles"].get("preset") or presets[0]
+        preset = st.selectbox("🎨 자막 디자인 프리셋", presets,
+                              index=presets.index(default_preset) if default_preset in presets else 0,
+                              help="프리셋을 고른 뒤 아래에서 세부 값을 바꿀 수 있어요.")
+        # 저장된 값이 같은 프리셋에서 나온 것이면 그대로, 아니면 프리셋 값으로 시작
+        base = {**CFG["subtitles"], **subtitles.SUBTITLE_PRESETS[preset]}
+        sty = {**base, **saved_style} if saved_style.get("preset") == preset else base
+        k = f"_{preset}"  # 프리셋을 바꾸면 아래 조절 값들이 새 프리셋 값으로 초기화되도록
+
+        fonts = subtitles.list_fonts()
+        font_labels = ["자동 선택"] + [f.name for f in fonts]
+        saved_font = Path(sty.get("font_file") or "").name
+        font_choice = st.selectbox("글꼴", font_labels,
+                                   index=font_labels.index(saved_font) if saved_font in font_labels else 0,
+                                   help="fonts 폴더에 .ttf/.otf 파일을 넣으면 여기에 나타나요.")
+        font_file = "" if font_choice == "자동 선택" else str(fonts[font_labels.index(font_choice) - 1])
+
         c1, c2, c3 = st.columns(3)
-        font_size = c1.slider("글자 크기", 30, 100, int(sty["font_size"]))
-        stroke = c1.slider("테두리 두께", 0, 12, int(sty["stroke_width"]))
-        bottom = c2.slider("아래쪽 여백(%)", 3, 30, int(float(sty["bottom_margin_pct"])))
+        font_size = c1.slider("글자 크기", 30, 100, int(sty["font_size"]), key="sz" + k)
+        stroke = c1.slider("테두리 두께", 0, 12, int(sty["stroke_width"]), key="sw" + k)
+        bottom = c2.slider("아래쪽 여백(%)", 3, 30, int(float(sty["bottom_margin_pct"])), key="bm" + k)
         max_chars = c2.slider("한 줄 최대 글자 수", 10, 24, int(saved.get("sub_max_chars") or CFG["subtitles"]["max_chars_per_line"]))
-        color = c3.color_picker("글자 색", sty["color"])
-        stroke_color = c3.color_picker("테두리 색", sty["stroke_color"])
+        color = c3.color_picker("글자 색", sty["color"][:7], key="c" + k)
+        stroke_color = c3.color_picker("테두리 색", sty["stroke_color"][:7], key="sc" + k)
         max_lines = c3.radio("최대 줄 수", [1, 2], horizontal=True,
                              index=int(saved.get("sub_max_lines") or CFG["subtitles"]["max_lines"]) - 1)
-        style_over = {"font_size": font_size, "stroke_width": stroke, "bottom_margin_pct": bottom,
-                      "color": color, "stroke_color": stroke_color}
+
+        c4, c5 = st.columns(2)
+        box_on = c4.checkbox("글자 뒤에 상자 깔기", value=bool(sty.get("box_color")), key="bx" + k)
+        box_rgb = c4.color_picker("상자 색", (sty.get("box_color") or "#000000")[:7], key="bc" + k, disabled=not box_on)
+        box_alpha = c4.slider("상자 진하기(%)", 10, 100,
+                              round(int((sty.get("box_color") or "#000000A6")[7:9] or "FF", 16) / 2.55),
+                              key="ba" + k, disabled=not box_on)
+        shadow_on = c5.checkbox("그림자 넣기", value=bool(sty.get("shadow_color")), key="sh" + k)
+        shadow_off = c5.slider("그림자 거리", 1, 12, int(sty.get("shadow_offset") or 4), key="so" + k,
+                               disabled=not shadow_on)
+        style_over = {"preset": preset, "font_file": font_file, "font_size": font_size, "stroke_width": stroke,
+                      "bottom_margin_pct": bottom, "color": color, "stroke_color": stroke_color,
+                      "box_color": f"{box_rgb}{round(box_alpha * 2.55):02X}" if box_on else "",
+                      "shadow_color": "#000000B0" if shadow_on else "", "shadow_offset": shadow_off if shadow_on else 0}
 
         # 미리보기 (1080p 화면을 축소해서 보여줌)
         style = subtitles.SubtitleStyle.from_config(CFG, **style_over)
-        frame = Image.new("RGBA", (1920, 1080), (70, 90, 110, 255))
+        frames = thumbnail.candidate_frames(proj, limit=1) if proj.scenes_path.exists() else []
+        frame = (thumbnail.cover_image(frames[0], (1920, 1080)).convert("RGBA") if frames
+                 else Image.new("RGBA", (1920, 1080), (70, 90, 110, 255)))
         sample = subtitles.chunk_text("집에서도 카페처럼 맛있는 라떼를 만들 수 있어요", max_chars, max_lines)[0]
         txt = subtitles.render_text_image(sample, style)
         frame.alpha_composite(txt, ((1920 - txt.width) // 2, int(1080 * (1 - bottom / 100)) - txt.height))
@@ -334,6 +381,9 @@ with tabs[4]:
 
         use_whisper = st.checkbox("faster-whisper로 정밀하게 맞추기 (선택, 설치 필요, 느림)",
                                   value=saved.get("use_whisper", False))
+        if st.button("💾 디자인만 저장"):
+            proj.update_settings(sub_style=style_over)
+            st.toast("자막 디자인을 저장했어요. 다음 렌더링부터 적용돼요.", icon="✅")
         if st.button("💬 자막 만들기", type="primary"):
             proj.update_settings(sub_style=style_over, use_whisper=use_whisper)
             cues = run_safely(subtitles.build_subtitles, proj, max_chars, max_lines, use_whisper,
@@ -367,6 +417,39 @@ with tabs[5]:
                 st.subheader(label)
                 st.video(str(path))
                 st.caption(f"📁 파일 위치: projects/{proj.name}/output/{path.name}")
+        # ---- 썸네일 ----
+        st.divider()
+        st.subheader("🖼️ 썸네일 (1280×720)")
+        script_data = proj.load_script() or {}
+        frames = thumbnail.candidate_frames(proj) if proj.scenes_path.exists() else []
+        thumb_text = st.text_input("썸네일 문구", script_data.get("thumbnail_text", ""),
+                                   help="짧을수록 잘 보여요. 10자 안팎을 추천해요. 색 조합은 위의 '썸네일 색 조합'에서 골라요.")
+        theme = opts["thumb_theme"]
+        uploaded = st.file_uploader("배경 사진 직접 올리기 (선택) — 직접 찍었거나 사용 허락받은 사진만",
+                                    type=["jpg", "jpeg", "png", "webp"])
+        frame_idx = 0
+        if uploaded is None and frames:
+            st.caption("배경으로 쓸 장면을 고르세요. (이 영상에 쓰인 소재에서 뽑았어요)")
+            cols = st.columns(len(frames))
+            for i, (col, fr) in enumerate(zip(cols, frames)):
+                col.image(thumbnail.cover_image(fr, (320, 180)), caption=f"{i + 1}번")
+            frame_idx = st.radio("배경 장면", list(range(len(frames))), horizontal=True,
+                                 format_func=lambda i: f"{i + 1}번") or 0
+        if st.button("🖼️ 썸네일 만들기", type="primary"):
+            bg = Image.open(uploaded).convert("RGB") if uploaded else None
+            outs = run_safely(thumbnail.generate_thumbnails, proj, thumb_text, theme, bg, frame_idx)
+            if outs:
+                proj.update_settings(thumb_theme=theme)
+                st.success("썸네일 3가지를 만들었어요. 마음에 드는 것을 내려받아 유튜브에 올리세요.")
+        thumbs = sorted(proj.output_dir.glob("thumbnail_*.jpg"))
+        if thumbs:
+            cols = st.columns(len(thumbs))
+            for col, path in zip(cols, thumbs):
+                layout = path.stem.replace("thumbnail_", "")
+                col.image(str(path), caption=thumbnail.LAYOUTS.get(layout, layout))
+                col.download_button("⬇️ 내려받기", path.read_bytes(), file_name=path.name, mime="image/jpeg",
+                                    key=f"dl_{path.name}")
+
         data = proj.load_script()
         if data and proj.final_video.exists():
             st.subheader("📋 업로드할 때 복사해서 쓰세요")

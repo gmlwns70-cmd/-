@@ -46,10 +46,11 @@ DEFAULTS: dict = {
     "assets": {"stock_order": ["pexels", "pixabay"], "max_clips_per_scene": 4, "image_seconds": 5},
     "subtitles": {"max_chars_per_line": 18, "max_lines": 2, "font_size": 54, "stroke_width": 4,
                   "bottom_margin_pct": 10, "color": "#FFFFFF", "stroke_color": "#000000",
-                  "font_file": ""},
+                  "font_file": "", "preset": "", "box_color": "", "shadow_color": "", "shadow_offset": 0},
     "render": {"fps": 30, "scene_padding": 0.35, "bgm_volume": 0.25, "bgm_duck_volume": 0.07,
                "on_screen_text_seconds": 3.5, "shorts_max_seconds": 58, "shorts_fit": "blur",
-               "preset": "medium"},
+               "preset": "medium", "transition": "crossfade", "transition_seconds": 0.5},
+    "thumbnail": {"theme": "노랑 + 흰색"},
 }
 
 # 키 이름 → (서비스 이름, 어디에 쓰는지, 발급 안내)

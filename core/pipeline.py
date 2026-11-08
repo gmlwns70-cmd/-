@@ -7,7 +7,8 @@ from __future__ import annotations
 
 from typing import Callable
 
-from . import assets, render, script, subtitles, tts
+from . import assets, render, script, subtitles, thumbnail, tts
+from .config import UserFacingError, load_config
 from .project import Project
 
 Progress = Callable[[float, str], None]
@@ -63,6 +64,13 @@ def run_after_review(project: Project, settings: dict, progress: Progress | None
             outputs = render.render_all(project, make_shorts=settings.get("make_shorts", True),
                                         bgm=settings.get("bgm"), burn_subtitles=settings.get("burn_subtitles", True),
                                         quality=settings.get("quality", "1080p"), progress=sub(lo, hi))
+    log("🖼️ 썸네일을 만드는 중…")
+    try:
+        thumbs = thumbnail.generate_thumbnails(project, theme=settings.get("thumb_theme") or
+                                               load_config()["thumbnail"]["theme"])
+        log(f"✅ 썸네일 {len(thumbs)}장을 만들었어요. (⑥ 렌더링 탭에서 확인)")
+    except UserFacingError as e:  # 썸네일 실패는 영상 완성에 영향 주지 않음
+        log(f"⚠️ 썸네일은 만들지 못했어요: {e}")
     project.set_status("done")
     log("🎉 모든 작업이 끝났어요!")
     return outputs

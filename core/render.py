@@ -176,6 +176,9 @@ class SceneBuilder:
         if not segs:
             return ColorClip((self.w, self.h), color=(24, 28, 40), duration=length)
         clip = segs[0] if len(segs) == 1 else concatenate_videoclips(segs, method="chain")
+        # 마지막 프레임 요청이 이어붙인 길이를 살짝 넘어도 오류가 나지 않게 시간을 끝에서 고정
+        safe_end = max(clip.duration - 1e-3, 0)
+        clip = clip.time_transform(lambda t: np.minimum(t, safe_end), apply_to=["mask"] if clip.mask else [])
         return clip.with_duration(length)
 
     def close(self):
@@ -272,11 +275,37 @@ def select_shorts_scenes(scenes: list[dict], max_seconds: float, padding: float)
     return out
 
 
+# ---------------- 장면 전환 ----------------
+TRANSITIONS = {"none": "없음 (바로 넘어감)", "crossfade": "페이드 (겹치며 전환)",
+               "black": "검은 화면으로 페이드", "slide": "슬라이드 (옆에서 밀려 들어옴)"}
+
+
+def assemble_scenes(scene_clips: list, timeline: list[tuple[float, float]], transition: str, td: float,
+                    size: tuple[int, int]):
+    """장면들을 이어 붙입니다. 장면 시작 시각은 그대로 두어 음성·자막 타이밍이 어긋나지 않게 합니다.
+    crossfade/slide 는 각 장면이 td초 더 길게 만들어져 있고(scene_clips), 다음 장면이 그 꼬리 위로 겹쳐 들어옵니다."""
+    from moviepy import CompositeVideoClip, concatenate_videoclips, vfx
+
+    total = sum(length for _, length in timeline)
+    if transition in ("crossfade", "slide") and len(scene_clips) > 1 and td > 0:
+        placed = []
+        for i, (clip, (start, _)) in enumerate(zip(scene_clips, timeline)):
+            if i > 0:
+                fx = vfx.CrossFadeIn(td) if transition == "crossfade" else vfx.SlideIn(td, "right")
+                clip = clip.with_effects([fx])
+            placed.append(clip.with_start(start))
+        return CompositeVideoClip(placed, size=size, bg_color=(0, 0, 0)).with_duration(total)
+    if transition == "black" and td > 0:
+        half = td / 2
+        scene_clips = [c.with_effects([vfx.FadeIn(half), vfx.FadeOut(half)]) for c in scene_clips]
+    return concatenate_videoclips(scene_clips, method="chain")
+
+
 # ---------------- 메인 ----------------
 def render_video(project: Project, *, shorts: bool = False, bgm: str | None = None, burn_subtitles: bool = True,
                  quality: str = "1080p", progress: Callable[[float, str], None] | None = None,
                  cfg: dict | None = None, size: tuple[int, int] | None = None) -> Path:
-    from moviepy import AudioFileClip, CompositeAudioClip, CompositeVideoClip, concatenate_videoclips
+    from moviepy import AudioFileClip, CompositeAudioClip, CompositeVideoClip
 
     cfg = cfg or load_config()
     rcfg = cfg["render"]
@@ -303,23 +332,30 @@ def render_video(project: Project, *, shorts: bool = False, bgm: str | None = No
     style = SubtitleStyle.from_config(cfg, **style_over).scaled(scale * (1.15 if shorts else 1.0))
     bottom_pct = 28.0 if shorts else float(style_over.get("bottom_margin_pct", cfg["subtitles"]["bottom_margin_pct"]))
     head_style = headline_style(style)
+    transition = settings.get("transition") or rcfg.get("transition", "crossfade")
+    td = float(settings.get("transition_seconds") or rcfg.get("transition_seconds", 0.5))
+    if transition not in TRANSITIONS:
+        transition = "none"
 
     mode = rcfg["shorts_fit"] if shorts else "cover"
     builder = SceneBuilder(project, w, h, cfg, mode="blur" if mode == "blur" else "cover")
     timeline = scene_timeline(scenes, padding)
     total = sum(length for _, length in timeline)
+    td = min(td, 0.45 * min(length for _, length in timeline))  # 아주 짧은 장면에서도 무리 없게
     scene_clips, narrations, speech = [], [], []
     try:
         for n, (sc, (start, length)) in enumerate(zip(scenes, timeline)):
             if progress:
                 progress(0.0, f"장면 준비 중… ({n + 1}/{len(scenes)})")
-            layers = [builder.visual(sc, length)]
+            # 겹치는 전환이면 다음 장면이 덮을 꼬리(td초)만큼 화면을 더 길게 만듦
+            tail = td if transition in ("crossfade", "slide") and n < len(scenes) - 1 else 0.0
+            layers = [builder.visual(sc, length + tail)]
             if sc.get("on_screen_text") and not shorts:
                 layers.append(text_clip(sc["on_screen_text"], head_style, 0,
                                         min(float(rcfg["on_screen_text_seconds"]), length), int(h * 0.08), w))
             if burn_subtitles:
                 layers += subtitle_clips(sc, length, style, w, h, bottom_pct, max_chars, max_lines)
-            scene_clips.append(CompositeVideoClip(layers, size=(w, h)).with_duration(length))
+            scene_clips.append(CompositeVideoClip(layers, size=(w, h)).with_duration(length + tail))
             if sc.get("audio"):
                 a = AudioFileClip(str(project.path / sc["audio"]))
                 builder.opened.append(a)
@@ -328,7 +364,7 @@ def render_video(project: Project, *, shorts: bool = False, bgm: str | None = No
                 narrations.append(a.with_start(start))
                 speech.append((start, start + min(a.duration, length)))
 
-        video = concatenate_videoclips(scene_clips, method="chain")
+        video = assemble_scenes(scene_clips, timeline, transition, td, (w, h))
         if shorts:
             title = data.get("thumbnail_text") or data.get("title") or ""
             if title:
