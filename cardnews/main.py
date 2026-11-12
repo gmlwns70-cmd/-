@@ -16,6 +16,12 @@ from pathlib import Path
 
 from cardmaker import settings
 
+for _stream in (sys.stdout, sys.stderr):  # 윈도우에서 이모지 출력 때문에 멈추지 않도록
+    try:
+        _stream.reconfigure(errors="replace")
+    except Exception:
+        pass
+
 
 def cmd_generate(args) -> int:
     cfg = settings.load_config(Path(args.config) if args.config else None, {

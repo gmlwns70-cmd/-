@@ -268,5 +268,11 @@ def render_dir(out_dir: Path, cfg: dict, only: list[int] | None = None) -> list[
             "text_box": res.text_box, "figure_box": res.figure_box, "warnings": res.warnings,
         })
         print(f"  ✓ card_{no:02d}.png  ({res.layout}, {res.font_size}px)")
-    (out_dir / "render_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    meta_path = out_dir / "render_meta.json"
+    if only and meta_path.exists():  # 일부만 다시 만들 때는 나머지 카드 기록을 유지
+        keep = [m for m in json.loads(meta_path.read_text(encoding="utf-8")) if m["no"] not in only]
+        meta_all = sorted(keep + meta, key=lambda m: m["no"])
+    else:
+        meta_all = meta
+    meta_path.write_text(json.dumps(meta_all, ensure_ascii=False, indent=2), encoding="utf-8")
     return meta

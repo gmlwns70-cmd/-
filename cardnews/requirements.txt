@@ -5,6 +5,7 @@ pyyaml>=6.0           # config.yaml 읽기
 python-dotenv>=1.0    # .env(API 키) 읽기
 requests>=2.31        # 폰트 자동 다운로드
 anthropic>=1.0        # 원고 생성 (Claude API)
+streamlit>=1.50        # 대시보드 화면
 
 # ===== 일러스트 생성 (둘 중 쓰는 것만 있어도 됩니다) =====
 openai>=1.50          # IMAGE_PROVIDER=openai 일 때

@@ -1,0 +1,13 @@
+[server]
+headless = false
+port = 8502
+address = "localhost"
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+primaryColor = "#E0B400"
+
+[client]
+toolbarMode = "minimal"
