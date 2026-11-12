@@ -4,6 +4,7 @@
   python main.py --topic "주제" --target "자영업 사장님" --cards 15   # 새로 만들기
   python main.py render output/2026-11-12_주제                        # 원고만 고쳐서 다시 합성
   python main.py check  output/2026-11-12_주제                        # 검수 리포트
+  python main.py images output/2026-11-12_주제                        # 빠진 일러스트만 새로 만들기
   python main.py sample                                               # API 키 없이 디자인 미리보기
 """
 from __future__ import annotations
@@ -98,6 +99,29 @@ def cmd_check(args) -> int:
     return 0
 
 
+def cmd_images(args) -> int:
+    """비어 있는 일러스트만 새로 만들고 다시 합성합니다."""
+    from cardmaker import images, render
+    out = Path(args.folder)
+    if not (out / "script.json").exists():
+        print(f"❌ {out} 안에 script.json 이 없어요.")
+        return 1
+    cfg = settings.load_config(Path(args.config) if args.config else None)
+    provider = settings.image_provider()
+    if provider == "none":
+        print("❌ .env 의 IMAGE_PROVIDER 가 none 이에요. openai 또는 gemini 로 바꿔 주세요.")
+        return 1
+    script = json.loads((out / "script.json").read_text(encoding="utf-8"))
+    try:
+        images.generate_all(out, script, cfg, provider)
+    except RuntimeError as e:
+        print(f"❌ {e}")
+        return 1
+    render.render_dir(out, cfg)
+    print("✅ 완료")
+    return 0
+
+
 def cmd_sample(args) -> int:
     from cardmaker import render
     from cardmaker.sample import SAMPLE_SCRIPT
@@ -113,13 +137,13 @@ def cmd_sample(args) -> int:
 
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    if argv and argv[0] in ("render", "check", "sample"):
+    if argv and argv[0] in ("render", "check", "images", "sample"):
         p = argparse.ArgumentParser(prog=f"main.py {argv[0]}")
         if argv[0] != "sample":
             p.add_argument("folder", help="output 안의 결과 폴더")
         p.add_argument("--config", help="설정 파일 경로 (기본: config.yaml)")
         args = p.parse_args(argv[1:])
-        return {"render": cmd_render, "check": cmd_check, "sample": cmd_sample}[argv[0]](args)
+        return {"render": cmd_render, "check": cmd_check, "images": cmd_images, "sample": cmd_sample}[argv[0]](args)
 
     p = argparse.ArgumentParser(description="인스타그램 카드뉴스 자동 제작")
     p.add_argument("--topic", help="주제 한 줄")
