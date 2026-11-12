@@ -1,0 +1,11 @@
+# ===== 필수 패키지 =====
+pillow>=10.0          # 카드 이미지 합성
+numpy>=1.26           # 종이 질감 노이즈 생성
+pyyaml>=6.0           # config.yaml 읽기
+python-dotenv>=1.0    # .env(API 키) 읽기
+requests>=2.31        # 폰트 자동 다운로드
+anthropic>=1.0        # 원고 생성 (Claude API)
+
+# ===== 일러스트 생성 (둘 중 쓰는 것만 있어도 됩니다) =====
+openai>=1.50          # IMAGE_PROVIDER=openai 일 때
+google-genai>=1.0     # IMAGE_PROVIDER=gemini 일 때
