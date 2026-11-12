@@ -12,7 +12,8 @@ SAMPLE_SCRIPT = {
                 {"text": "줄 서던 가게가", "highlight": False},
                 {"text": "금방 조용해지는 이유", "highlight": True},
             ],
-            "image_prompt": "", "emotion": "당황", "source": {"name": "", "url": ""},
+            "image_prompt": "upper body, holding an empty order pad and a pen, looking sideways in surprise",
+            "emotion": "당황", "source": {"name": "", "url": ""},
             "verify_needed": False,
         },
         {
@@ -27,6 +28,18 @@ SAMPLE_SCRIPT = {
                 {"text": "않나요?", "highlight": False},
             ],
             "image_prompt": "", "emotion": "", "source": {"name": "", "url": ""},
+            "verify_needed": False,
+        },
+        {
+            "no": 4, "role": "반전", "type": "illustrated",
+            "lines": [
+                {"text": "그런데 문제는", "highlight": False},
+                {"text": "처음 온 손님이", "highlight": False},
+                {"text": "다시 오지 않는다는", "highlight": True},
+                {"text": "거예요", "highlight": False},
+            ],
+            "image_prompt": "upper body, hand on cheek, looking down at a phone with a worried face",
+            "emotion": "걱정", "source": {"name": "", "url": ""},
             "verify_needed": False,
         },
         {
