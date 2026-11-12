@@ -74,6 +74,21 @@ def _client():
     return anthropic.Anthropic()  # 키는 .env 의 ANTHROPIC_API_KEY 에서 자동으로 읽습니다
 
 
+def explain_bad_request(msg: str) -> str:
+    """API가 거절한 이유를 쉬운 한국어로 바꿉니다."""
+    low = msg.lower()
+    if "credit balance" in low or "billing" in low:
+        return ("Claude API 충전 금액(크레딧)이 부족해요.\n"
+                "   → https://console.anthropic.com 에 로그인 → Billing(결제) 에서 충전한 뒤 다시 눌러 주세요.\n"
+                "   (claude.ai Pro 구독과 API 요금은 따로예요)")
+    if "model" in low and ("not found" in low or "does not exist" in low or "access" in low):
+        return "이 API 키로는 설정된 모델을 쓸 수 없어요. config.yaml 의 claude.model 을 확인해 주세요.\n   원문: " + msg
+    if "web_search" in low or "web search" in low:
+        return ("이 API 계정에서 웹 검색 기능이 꺼져 있어요.\n"
+                "   → console.anthropic.com 의 설정(Privacy/Features)에서 Web search 를 켜 주세요.\n   원문: " + msg)
+    return "Claude API가 요청을 거절했어요.\n   원문: " + msg
+
+
 def _create(client, cfg: dict, stream: bool = False, **kwargs):
     """요청이 안전 필터에 거절되면 다른 모델로 자동 재시도(fallbacks)하도록 보냅니다."""
     import anthropic
@@ -93,7 +108,7 @@ def _create(client, cfg: dict, stream: bool = False, **kwargs):
         if "fallback" in str(e).lower() and params.pop("fallbacks", None):
             params.pop("betas", None)
             return _create(client, {**cfg, "claude": {**c, "use_fallback": False}}, stream, **kwargs)
-        raise ScriptError(f"Claude API 요청 오류: {e.message}") from e
+        raise ScriptError(explain_bad_request(str(e))) from e
     except anthropic.RateLimitError as e:
         raise ScriptError("요청이 너무 많습니다. 1~2분 뒤 다시 실행해 주세요.") from e
     except anthropic.APIConnectionError as e:

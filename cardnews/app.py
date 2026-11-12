@@ -49,7 +49,7 @@ def run_main(args: list[str], log_box) -> int:
     lines: list[str] = []
     for raw in proc.stdout:
         lines.append(raw.decode("utf-8", errors="replace").rstrip())
-        log_box.code("\n".join(lines[-40:]), language=None)
+        log_box.code("\n".join(lines[-40:]), language=None, wrap_lines=True)
     return proc.wait()
 
 
@@ -97,9 +97,13 @@ with tab_make:
     with st.form("make"):
         topic = st.text_input("주제 *", placeholder="예: 줄 서던 가게가 금방 조용해지는 이유")
         c1, c2, c3 = st.columns([2, 2, 1])
-        target = c1.text_input("누구에게 하는 이야기인가요?", value=cfg["target"])
+        target = c1.text_input("누구에게 하는 이야기인가요?", value=cfg["target"],
+                               help="비워 두면 주제를 보고 알아서 정해요")
         brand = c2.text_input("계정명", value=cfg["brand"])
         cards = c3.slider("장수", 10, 15, int(cfg["cards"]))
+        with st.expander("🎨 그림 캐릭터 바꾸기 (주제가 가게 이야기가 아닐 때)"):
+            character = st.text_input("고정 캐릭터 설명", value=cfg["character"],
+                                      help="모든 그림에 똑같이 나오는 인물이에요. 예: 20대 한국인 남성 e스포츠 팬, 검은 후드티, 짧은 머리")
         text_only = st.checkbox("일러스트 없이 글자 카드만 만들기", value=(provider == "none"))
         go = st.form_submit_button("🚀 카드뉴스 만들기", type="primary", use_container_width=True)
 
@@ -109,7 +113,9 @@ with tab_make:
         elif not settings.has_key("ANTHROPIC_API_KEY"):
             st.error("Claude API 키가 없어요. 왼쪽 '준비 상태' 안내를 따라 주세요.")
         else:
-            args = ["--topic", topic.strip(), "--target", target, "--brand", brand, "--cards", str(cards)]
+            args = ["--topic", topic.strip(),
+                    "--target", target.strip() or "주제를 보고 가장 관심 있을 독자 (알아서 판단)",
+                    "--brand", brand, "--cards", str(cards), "--character", character.strip() or cfg["character"]]
             if text_only:
                 args.append("--text-only")
             with st.status("만드는 중이에요… 3~10분 걸려요. 이 창을 닫지 마세요.", expanded=True) as status:
@@ -118,7 +124,9 @@ with tab_make:
                     status.update(label="✅ 완성! '② 결과 보기·다운로드' 탭을 눌러 보세요.", state="complete")
                     st.balloons()
                 else:
-                    status.update(label="❌ 만들다 멈췄어요. 위 기록의 마지막 줄을 확인해 주세요.", state="error")
+                    status.update(label="❌ 만들다 멈췄어요. 아래 빨간 상자의 안내를 확인해 주세요.", state="error")
+            if code != 0:
+                st.error("기록 상자 맨 아래 ❌ 줄이 멈춘 이유예요. 해결이 어려우면 이 화면을 캡처해서 보내 주세요.")
 
 # ── ② 결과 보기·다운로드 ─────────────────────────────────
 with tab_view:
