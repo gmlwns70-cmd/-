@@ -64,7 +64,9 @@ def cmd_generate(args) -> int:
     else:
         try:
             from cardmaker import images
-            images.generate_all(out, script, cfg, provider)
+            res = images.generate_all(out, script, cfg, provider)
+            if res["failed"]:
+                print("  ⚠ 그림을 못 만든 카드는 글자 카드로 대신 만들어요. 이유를 해결하고 '일러스트 다시 만들기'를 누르면 돼요.")
         except Exception as e:  # 일러스트가 실패해도 카드는 만들어지도록
             print(f"  ⚠ 일러스트 생성 실패: {e}\n  → 텍스트 카드로 대신 만들어요. 나중에 다시 시도할 수 있어요.")
 

@@ -85,6 +85,12 @@ with st.sidebar:
             st.success(f"일러스트: {provider} ✅")
         else:
             st.warning(f"일러스트: {provider} 키가 없어요")
+        if st.button("🔌 그림 연결 테스트", use_container_width=True,
+                     help="작은 그림 하나를 만들어 보며 이미지 API가 되는지 확인해요 (요금이 조금 나갈 수 있어요)"):
+            from cardmaker import images as _images
+            with st.spinner("테스트 그림을 만드는 중…"):
+                ok, msg = _images.test_connection(provider)
+            (st.success if ok else st.error)(msg)
     st.divider()
     st.caption("결과 폴더: `cardnews/output`")
 
@@ -141,6 +147,26 @@ with tab_view:
                            type="primary", use_container_width=True)
         if not cards_png:
             st.warning("카드 이미지가 없어요.")
+
+        # 그림이 빠진 카드 안내 + 다시 만들기
+        script_v = json.loads((folder / "script.json").read_text(encoding="utf-8"))
+        want_img = [c["no"] for c in script_v["cards"] if c.get("type") in ("cover", "illustrated")]
+        missing = [n for n in want_img if not (folder / "images" / f"card_{n:02d}.png").exists()]
+        if missing:
+            err = folder / "images" / "errors.txt"
+            st.warning(f"🖼 그림이 들어갈 카드 {len(want_img)}장 중 {len(missing)}장에 그림이 없어요 "
+                       f"({', '.join(map(str, missing))}번). 지금은 글자 카드로 보여요.")
+            if err.exists():
+                reasons = [l for l in err.read_text(encoding="utf-8").splitlines() if l.strip()]
+                st.error("그림을 못 만든 이유:\n\n" + "\n".join(f"- {l}" for l in reasons))
+            if provider == "none":
+                st.caption("그림을 넣으려면 `.env` 의 `IMAGE_PROVIDER` 를 gemini 또는 openai 로 바꾸고 키를 넣은 뒤 이 화면을 새로고침(F5)하세요.")
+            elif st.button("🖼 빠진 일러스트 다시 만들기", type="primary", use_container_width=True,
+                           help="글은 그대로 두고 그림만 새로 만들어 카드에 넣어요"):
+                with st.status("그림을 만드는 중이에요… 한 장에 수십 초씩 걸려요.", expanded=True) as stt:
+                    code = run_main(["images", str(folder)], st.empty())
+                    stt.update(label="완료! 화면을 새로고침(F5)하면 바뀐 카드가 보여요." if code == 0 else "❌ 멈췄어요. 기록 맨 아래 줄을 확인해 주세요.",
+                               state="complete" if code == 0 else "error")
         cols = st.columns(3)
         for i, f in enumerate(cards_png):
             with cols[i % 3]:
