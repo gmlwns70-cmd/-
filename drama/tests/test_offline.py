@@ -262,3 +262,33 @@ def test_all_styles_render_inside_safe_area(tmp_path):
         subtitle_style.render("그 우산, 제 건데요.", _font(), p, style, 58, "한하은", "#FF8FB1")
         box = Image.open(p).getchannel("A").point(lambda a: 255 if a > 100 else 0).getbbox()  # 옅은 그림자 제외
         assert box and box[1] > 1100 and box[3] <= subtitle_style.BOTTOM + 40, (style, box)
+
+
+# ── 썸네일 ─────────────────────────────────────────────
+from dramamaker import thumbnail  # noqa: E402
+
+
+def test_thumb_lines():
+    assert thumbnail.thumb_lines({"thumbnail_text": "우산 하나에\n심장이 철렁", "title": "x"}) == ["우산 하나에", "심장이 철렁"]
+    assert thumbnail.thumb_lines({"title": "비 오는 날 우산을 둘러싼 오해"}) == ["비 오는 날", "우산을 둘러싼 오해"]
+    assert thumbnail.thumb_lines({"title": "짧은 제목"}) == ["짧은 제목"]
+
+
+def test_make_thumbnails_sizes_and_background_priority(tmp_path):
+    from PIL import Image
+    series = copy.deepcopy(SAMPLE)
+    clip = tmp_path / "clips" / "EP01"
+    clip.mkdir(parents=True)
+    logs = []
+    files = thumbnail.make_thumbnails(tmp_path, series, 1, _cfg(), log=logs.append)   # 아무것도 없음 → 기본 배경
+    assert [Image.open(f).size for f in files] == [(1080, 1920), (1280, 720)] and "기본 배경" in logs[-1]
+    Image.new("RGB", (640, 360), "red").save(clip / "cut03.png")
+    thumbnail.make_thumbnails(tmp_path, series, 1, _cfg(), log=logs.append)          # 인물 많은 컷이 없어 cut03
+    assert "컷 3 이미지" in logs[-1]
+    edit._run(["-f", "lavfi", "-i", "color=c=blue:s=720x1280:r=24", "-t", "2", str(clip / "cut01.mp4")])
+    thumbnail.make_thumbnails(tmp_path, series, 1, _cfg(), log=logs.append)          # thumbnail_cut=1 영상 우선
+    assert "컷 1 영상" in logs[-1]
+    Image.new("RGB", (1080, 1920), "green").save(clip / "thumb.png")
+    files = thumbnail.make_thumbnails(tmp_path, series, 1, _cfg(), log=logs.append)  # 직접 고른 장면이 최우선
+    assert "직접 고른 장면" in logs[-1]
+    assert Image.open(files[0]).getpixel((540, 700))[1] > 100                         # 초록 배경이 실제로 쓰임

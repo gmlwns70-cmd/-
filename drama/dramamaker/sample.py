@@ -27,6 +27,7 @@ SAMPLE = {
     },
     "episodes": [{
         "no": 1, "title": "그 우산, 제 건데요",
+        "thumbnail_text": "우산 하나에\n심장이 철렁", "thumbnail_cut": 1,
         "cuts": [
             {"no": 1, "seconds": 5, "location": "bus stop", "time_of_day": "rainy evening",
              "characters": ["haeun", "dojun"], "shot": "close-up", "camera_move": "slow push-in",

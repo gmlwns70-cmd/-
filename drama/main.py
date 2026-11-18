@@ -6,6 +6,7 @@
   python main.py export output/2026-11-18_우산은_하나뿐   # series.json 을 고친 뒤 다시 내보내기
   python main.py edit   output/2026-11-18_우산은_하나뿐   # 컷 영상·음성·자막 → 완성 영상 자동 편집
   python main.py subtitle-preview                     # 자막 스타일 3가지 미리보기 이미지
+  python main.py thumbnail output/2026-11-18_우산은_하나뿐  # 썸네일만 다시 만들기 (edit 하면 자동으로도 만들어짐)
 """
 from __future__ import annotations
 
@@ -94,6 +95,9 @@ def cmd_edit(args) -> int:
             print(f"❌ {e}")
             return 1
         print(f"✅ 완성: {final}")
+        from dramamaker import thumbnail
+        for f in thumbnail.make_thumbnails(out, series, no, cfg):
+            print(f"✅ 썸네일: {f}")
     return 0
 
 
@@ -106,6 +110,22 @@ def main(argv=None) -> int:
         p.add_argument("--no-tts", action="store_true", help="자동 음성(TTS) 끄기 (자막·원래 소리는 유지)")
         p.add_argument("--config", help="다른 설정 파일을 쓸 때")
         return cmd_edit(p.parse_args(argv[1:]))
+    if argv and argv[0] == "thumbnail":
+        p = argparse.ArgumentParser(prog="main.py thumbnail", description="회차 썸네일만 다시 만들기")
+        p.add_argument("folder", help="output 안의 결과 폴더")
+        p.add_argument("--episode", type=int, help="이 회차만 (안 쓰면 전체)")
+        a = p.parse_args(argv[1:])
+        from dramamaker import thumbnail
+        out = Path(a.folder)
+        if not (out / "series.json").exists():
+            print(f"❌ {out} 안에 series.json 이 없어요. 폴더 경로를 확인해 주세요.")
+            return 1
+        series = json.loads((out / "series.json").read_text(encoding="utf-8"))
+        cfg = settings.load_config(None, series.get("config"))
+        for no in ([a.episode] if a.episode else [e["no"] for e in series["episodes"]]):
+            for f in thumbnail.make_thumbnails(out, series, no, cfg):
+                print(f"✅ 썸네일: {f}")
+        return 0
     if argv and argv[0] == "subtitle-preview":
         from dramamaker import edit, subtitle_style
         cfg = settings.load_config()

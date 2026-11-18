@@ -51,6 +51,8 @@ def write_script(path: Path, ep: dict, bible: dict) -> None:
     chars = char_map(bible)
     total = sum(c["seconds"] for c in ep["cuts"])
     lines = [f"# EP{ep['no']:02d}. {ep['title']}", "", f"총 {len(ep['cuts'])}컷 · 약 {total}초", ""]
+    if ep.get("thumbnail_text"):
+        lines += [f"> 썸네일 문구: {ep['thumbnail_text'].replace(chr(10), ' / ')}  (배경: 컷 {ep.get('thumbnail_cut', 1)})", ""]
     t = 0
     for c in ep["cuts"]:
         names = ", ".join(chars.get(i, {}).get("name", i) for i in c["characters"]) or "인물 없음"
