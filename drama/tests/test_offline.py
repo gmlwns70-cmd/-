@@ -97,3 +97,39 @@ def test_schemas_are_strict():
             walk(s["items"])
     walk(generate.BIBLE_SCHEMA)
     walk(generate.EPISODE_SCHEMA)
+
+
+# ── 자동 편집 ───────────────────────────────────────────
+from dramamaker import edit  # noqa: E402
+
+
+def test_assign_voices_by_gender_and_override():
+    v = edit.assign_voices(SAMPLE["bible"])
+    assert v["haeun"]["voice"] == edit.FEMALE and v["dojun"]["voice"] == edit.MALE
+    v = edit.assign_voices(SAMPLE["bible"], {"dojun": "ko-KR-HyunsuNeural"})
+    assert v["dojun"]["voice"] == "ko-KR-HyunsuNeural"
+
+
+def test_plan_cut_extends_for_long_voice_and_spreads_subtitles():
+    cut = {"seconds": 4, "dialogue": [{"speaker": "a", "line": "하나"}, {"speaker": "b", "line": "둘"}]}
+    length, ev = edit.plan_cut(cut, [(Path("1.mp3"), 2.0), (Path("2.mp3"), 3.0)], False)
+    assert abs(length - 6.05) < 1e-9 and abs(ev[1]["start"] - 2.55) < 1e-9
+    length, ev = edit.plan_cut(cut, [], False)               # 음성 없음 → 자막만 고르게
+    assert length == 4 and ev[0]["end"] == ev[1]["start"] and abs(ev[1]["end"] - 3.7) < 1e-9
+
+
+def _tone(text, voice, out):
+    edit._run(["-f", "lavfi", "-i", "sine=f=440", "-t", f"{0.2 * len(text):.2f}", str(out)])
+
+
+def test_edit_episode_end_to_end(tmp_path):
+    series = copy.deepcopy(SAMPLE)
+    series["episodes"][0]["cuts"] = series["episodes"][0]["cuts"][:3]
+    clip = tmp_path / "clips" / "EP01"
+    clip.mkdir(parents=True)
+    edit._run(["-f", "lavfi", "-i", "testsrc=size=1280x720:rate=24", "-t", "2", str(clip / "cut01.mp4")])
+    final = edit.edit_episode(tmp_path, series, 1, _cfg(), tts=True, synth=_tone, log=lambda *_: None)
+    total = sum(max(c["seconds"], 0) for c in series["episodes"][0]["cuts"])
+    assert abs(edit.media_duration(final) - total) < 0.3       # 5+5+5초, 짧은 클립은 마지막 장면 유지
+    srt = (tmp_path / "05_자막_EP01.srt").read_text(encoding="utf-8")
+    assert "그 우산, 제 건데요." in srt and "확실해요?" in srt

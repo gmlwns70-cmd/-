@@ -91,7 +91,28 @@ def write_paste(path: Path, ep: dict, bible: dict, cfg: dict) -> None:
     path.write_text("\n".join(out), encoding="utf-8")
 
 
+def write_clip_guide(out: Path, series: dict) -> None:
+    """뉴테이크에서 받은 파일을 어디에 어떤 이름으로 넣는지 알려주는 폴더와 안내문을 만듭니다."""
+    clips = out / "clips"
+    clips.mkdir(exist_ok=True)
+    lines = ["뉴테이크에서 받은 파일을 아래 이름으로 넣고  python main.py edit 결과폴더  를 실행하세요.", "",
+             "  EP01/cut01.mp4        컷 영상 (mp4, mov, webm)",
+             "  EP01/cut01.png        영상이 아직 없을 때 시작 이미지 (천천히 확대 효과로 대신 사용)",
+             "  EP01/cut01_voice.mp3  직접 녹음한 음성을 쓰고 싶을 때만 (없으면 자동 TTS)",
+             "  bgm.mp3               배경음악 (clips 폴더 바로 아래, 선택)", "",
+             "아무 파일도 없는 컷은 '영상 대기 중' 화면으로 채워지니, 먼저 편집을 돌려 콘티 영상으로 미리 볼 수 있어요.",
+             "⚠ 배경음악은 저작권 걱정 없는 무료 음원(유튜브 오디오 보관함 등)만 쓰세요.", ""]
+    for ep in series["episodes"]:
+        tag = f"EP{ep['no']:02d}"
+        (clips / tag).mkdir(exist_ok=True)
+        lines.append(f"[{tag}] {ep['title']}")
+        lines += [f"  cut{c['no']:02d}.mp4  ({c['seconds']}초) {c['action_ko']}" for c in ep["cuts"]]
+        lines.append("")
+    (clips / "넣는법.txt").write_text("\n".join(lines), encoding="utf-8")
+
+
 def export_all(out: Path, series: dict, cfg: dict) -> list[Path]:
+    write_clip_guide(out, series)
     bible = series["bible"]
     (out / "series.json").write_text(json.dumps(series, ensure_ascii=False, indent=2), encoding="utf-8")
     files = [out / "series.json", out / "01_인물설정표.md"]

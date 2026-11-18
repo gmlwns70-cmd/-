@@ -3,5 +3,11 @@ anthropic>=1.0        # 대본 생성 (Claude API)
 pyyaml>=6.0           # config.yaml 읽기
 python-dotenv>=1.0    # .env(API 키) 읽기
 
+# ===== 자동 편집 =====
+pillow>=10.0          # 자막·대기 화면 이미지
+edge-tts>=7.0         # 무료 대사 음성(TTS)
+imageio-ffmpeg>=0.5   # 영상 합치기 (ffmpeg 내장)
+requests>=2.31        # 한글 폰트 자동 다운로드
+
 # ===== 테스트용 =====
 pytest>=8.0

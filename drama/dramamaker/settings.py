@@ -27,6 +27,8 @@ DEFAULTS = {
     "cut_max": 8,
     "visual_style": "cinematic Korean drama look, soft natural lighting, shallow depth of field, "
                     "photorealistic, 35mm film tone",
+    "edit": {"subtitle_size": 64, "bgm_volume": 0.12},
+    "voices": {},
     "claude": {
         "model": "claude-opus-5-5",
         "effort": "high",

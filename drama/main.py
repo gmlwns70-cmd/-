@@ -4,6 +4,7 @@
   python main.py --idea "비 오는 날 우산 하나로 엮인 꽃집 사장과 건축가" --episodes 3 --seconds 60
   python main.py sample                              # API 키 없이 결과물 미리보기
   python main.py export output/2026-11-18_우산은_하나뿐   # series.json 을 고친 뒤 다시 내보내기
+  python main.py edit   output/2026-11-18_우산은_하나뿐   # 컷 영상·음성·자막 → 완성 영상 자동 편집
 """
 from __future__ import annotations
 
@@ -73,8 +74,37 @@ def cmd_export(args) -> int:
     return 0
 
 
+def cmd_edit(args) -> int:
+    from dramamaker import edit
+    out = Path(args.folder)
+    src = out / "series.json"
+    if not src.exists():
+        print(f"❌ {out} 안에 series.json 이 없어요. 폴더 경로를 확인해 주세요.")
+        return 1
+    series = json.loads(src.read_text(encoding="utf-8"))
+    cfg = settings.load_config(Path(args.config) if args.config else None, series.get("config"))
+    nos = [args.episode] if args.episode else [e["no"] for e in series["episodes"]]
+    export.write_clip_guide(out, series)
+    for no in nos:
+        print(f"▶ EP{no:02d} 자동 편집")
+        try:
+            final = edit.edit_episode(out, series, no, cfg, tts=not args.no_tts)
+        except edit.EditError as e:
+            print(f"❌ {e}")
+            return 1
+        print(f"✅ 완성: {final}")
+    return 0
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "edit":
+        p = argparse.ArgumentParser(prog="main.py edit", description="컷 영상 + 음성 + 자막 → 완성 영상")
+        p.add_argument("folder", help="output 안의 결과 폴더")
+        p.add_argument("--episode", type=int, help="이 회차만 편집 (안 쓰면 전체)")
+        p.add_argument("--no-tts", action="store_true", help="음성 없이 자막만")
+        p.add_argument("--config", help="다른 설정 파일을 쓸 때")
+        return cmd_edit(p.parse_args(argv[1:]))
     if argv and argv[0] in ("sample", "export"):
         p = argparse.ArgumentParser(prog=f"main.py {argv[0]}")
         if argv[0] == "export":

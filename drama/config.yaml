@@ -20,3 +20,16 @@ claude:
   model: claude-opus-5-5      # 대본을 쓰는 Claude 모델
   effort: high                # 생각의 깊이: low / medium / high / xhigh / max
   use_fallback: true          # 요청이 거절되면 다른 모델로 자동 재시도
+
+# ── 자동 편집 (python main.py edit 결과폴더) ──
+edit:
+  subtitle_size: 64           # 자막 글자 크기(px)
+  bgm_volume: 0.12            # 배경음악 크기 (0~1, 대사가 잘 들리게 작게)
+
+# 인물별 목소리를 직접 고르고 싶을 때만 (비워 두면 남/여에 맞춰 자동 선택)
+# 인물 id 는 결과 폴더의 01_인물설정표.md 에 있어요.
+# 예)
+# voices:
+#   haeun: {voice: ko-KR-SunHiNeural, pitch: "+10Hz", rate: "+5%"}
+#   dojun: {voice: ko-KR-InJoonNeural}
+voices: {}
