@@ -133,3 +133,27 @@ def test_edit_episode_end_to_end(tmp_path):
     assert abs(edit.media_duration(final) - total) < 0.3       # 5+5+5초, 짧은 클립은 마지막 장면 유지
     srt = (tmp_path / "05_자막_EP01.srt").read_text(encoding="utf-8")
     assert "그 우산, 제 건데요." in srt and "확실해요?" in srt
+
+
+def _mean_db(path, start, dur):
+    p = edit.subprocess.run([edit.ffmpeg_exe(), "-hide_banner", "-ss", str(start), "-t", str(dur), "-i", str(path),
+                             "-af", "volumedetect", "-vn", "-f", "null", "-"], capture_output=True, text=True)
+    return float(edit.re.search(r"mean_volume: (-?[\d.]+) dB", p.stderr).group(1))
+
+
+def test_clip_original_sound_kept_and_ducked_under_dialogue(tmp_path):
+    src = tmp_path / "clip.mp4"
+    edit._run(["-f", "lavfi", "-i", "testsrc=size=720x1280:rate=24", "-f", "lavfi", "-i", "sine=f=300",
+               "-t", "4", "-shortest", str(src)])
+    assert edit.has_audio(src)
+    silent = tmp_path / "silent.wav"
+    edit._run(["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo", "-t", "1", str(silent)])
+    ev = [{"text": "", "start": 2.0, "end": 3.0, "audio": silent}]
+    out = tmp_path / "seg.mp4"
+    edit.render_cut(src, "video", 4.0, ev, [], out, clip_volume=0.7, clip_duck=0.2)
+    before, during = _mean_db(out, 0.5, 1.0), _mean_db(out, 2.3, 0.5)
+    assert before > -30                       # 원래 소리가 들어감
+    assert before - during > 10               # 대사 동안 크게 줄어듦 (0.2배 ≈ -14dB)
+    muted = tmp_path / "muted.mp4"
+    edit.render_cut(src, "video", 4.0, ev, [], muted, clip_volume=0.0)
+    assert _mean_db(muted, 0.5, 1.0) < -80    # clip_volume 0 이면 끔

@@ -102,7 +102,7 @@ def main(argv=None) -> int:
         p = argparse.ArgumentParser(prog="main.py edit", description="컷 영상 + 음성 + 자막 → 완성 영상")
         p.add_argument("folder", help="output 안의 결과 폴더")
         p.add_argument("--episode", type=int, help="이 회차만 편집 (안 쓰면 전체)")
-        p.add_argument("--no-tts", action="store_true", help="음성 없이 자막만")
+        p.add_argument("--no-tts", action="store_true", help="자동 음성(TTS) 끄기 (자막·원래 소리는 유지)")
         p.add_argument("--config", help="다른 설정 파일을 쓸 때")
         return cmd_edit(p.parse_args(argv[1:]))
     if argv and argv[0] in ("sample", "export"):

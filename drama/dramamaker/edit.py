@@ -64,6 +64,12 @@ def media_duration(path: Path) -> float:
     return int(h) * 3600 + int(mi) * 60 + float(s)
 
 
+def has_audio(path: Path) -> bool:
+    p = subprocess.run([ffmpeg_exe(), "-hide_banner", "-i", str(path)], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
+    return bool(re.search(r"Stream #.*Audio:", p.stderr))
+
+
 def find_font(fonts_dir: Path) -> Path:
     cands = sorted(fonts_dir.glob("*.otf")) + sorted(fonts_dir.glob("*.ttf")) + [
         Path("C:/Windows/Fonts/malgunbd.ttf"), Path("C:/Windows/Fonts/malgun.ttf"),
@@ -186,7 +192,9 @@ def plan_cut(cut: dict, voice_files: list[tuple[Path, float]], single_voice: boo
     return length, events
 
 
-def render_cut(src: Path, kind: str, length: float, events: list[dict], subs: list[Path], out: Path) -> None:
+def render_cut(src: Path, kind: str, length: float, events: list[dict], subs: list[Path], out: Path,
+               clip_volume: float = 0.0, clip_duck: float = 1.0) -> None:
+    """clip_volume > 0 이면 원본 영상의 소리를 그 크기로 넣고, 대사가 나오는 동안은 clip_duck 배로 더 줄입니다."""
     args: list[str] = []
     if kind == "video":
         args += ["-i", str(src)]
@@ -210,6 +218,15 @@ def render_cut(src: Path, kind: str, length: float, events: list[dict], subs: li
     sil = n_in
     n_in += 1
     mix = [f"[{sil}:a]"]
+    if kind == "video" and clip_volume > 0:
+        talk = events if any(e["audio"] for e in events) else []  # 음성이 있는 컷만 줄이기
+        duck = ""
+        if talk and clip_duck < 1:
+            spans = "+".join(f"between(t,{ev['start'] - 0.15:.3f},{ev['end'] + 0.15:.3f})" for ev in talk)
+            duck = f",volume={clip_duck}:enable='{spans}'"
+        chain.append(f"[0:a]aresample=44100,aformat=channel_layouts=stereo,volume={clip_volume}{duck},"
+                     f"apad,atrim=0:{length:.3f},asetpts=PTS-STARTPTS[clipa]")
+        mix.append("[clipa]")
     for ev in events:
         if ev["audio"]:
             ms = int(ev["start"] * 1000)
@@ -244,7 +261,7 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
     voices = assign_voices(series["bible"], cfg.get("voices"))
     ecfg = cfg.get("edit", {})
 
-    segs, srt, t0, counts = [], [], 0.0, {"video": 0, "image": 0, "placeholder": 0}
+    segs, srt, t0, counts = [], [], 0.0, {"video": 0, "image": 0, "placeholder": 0, "clip_audio": 0}
     for cut in ep["cuts"]:
         stem = f"cut{cut['no']:02d}"
         src, kind = _find(clip_dir, stem, VIDEO_EXT), "video"
@@ -283,7 +300,10 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
             srt.append((t0 + ev["start"], t0 + ev["end"], ev["text"]))
         seg = work / f"{stem}.mp4"
         log(f"  · 컷 {cut['no']:>2} ({kind}, {length:.1f}초)")
-        render_cut(src, "video" if kind == "video" else "image", length, events, subs, seg)
+        cvol = float(ecfg.get("clip_volume", 0.7)) if kind == "video" and has_audio(src) else 0.0
+        counts["clip_audio"] += cvol > 0
+        render_cut(src, "video" if kind == "video" else "image", length, events, subs, seg,
+                   cvol, float(ecfg.get("clip_duck", 0.35)))
         segs.append(seg)
         t0 += length
 
@@ -310,5 +330,6 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
         "\n".join(f"{i}\n{_srt_time(a)} --> {_srt_time(b)}\n{txt}\n" for i, (a, b, txt) in enumerate(srt, 1)),
         encoding="utf-8")
     log(f"  · 영상 {counts['video']}컷 / 이미지 {counts['image']}컷 / 대기 화면 {counts['placeholder']}컷"
+        + f" / 원본 소리 {counts['clip_audio']}컷"
         + (" / 배경음악 O" if bgm else " / 배경음악 없음") + (" / 음성 O" if tts else " / 음성 없음(자막만)"))
     return final
