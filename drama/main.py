@@ -5,6 +5,7 @@
   python main.py sample                              # API 키 없이 결과물 미리보기
   python main.py export output/2026-11-18_우산은_하나뿐   # series.json 을 고친 뒤 다시 내보내기
   python main.py edit   output/2026-11-18_우산은_하나뿐   # 컷 영상·음성·자막 → 완성 영상 자동 편집
+  python main.py subtitle-preview                     # 자막 스타일 3가지 미리보기 이미지
 """
 from __future__ import annotations
 
@@ -105,6 +106,15 @@ def main(argv=None) -> int:
         p.add_argument("--no-tts", action="store_true", help="자동 음성(TTS) 끄기 (자막·원래 소리는 유지)")
         p.add_argument("--config", help="다른 설정 파일을 쓸 때")
         return cmd_edit(p.parse_args(argv[1:]))
+    if argv and argv[0] == "subtitle-preview":
+        from dramamaker import edit, subtitle_style
+        cfg = settings.load_config()
+        settings.OUTPUT_DIR.mkdir(exist_ok=True)
+        out = subtitle_style.preview(edit.find_font(settings.BASE_DIR / "fonts"),
+                                     settings.OUTPUT_DIR / "자막_스타일_미리보기.png",
+                                     int(cfg["edit"].get("subtitle_size", 58)))
+        print(f"✅ 자막 스타일 미리보기: {out}\n   마음에 드는 스타일 이름을 config.yaml 의 subtitle_style 에 적으세요.")
+        return 0
     if argv and argv[0] in ("sample", "export"):
         p = argparse.ArgumentParser(prog=f"main.py {argv[0]}")
         if argv[0] == "export":

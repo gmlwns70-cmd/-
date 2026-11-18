@@ -20,6 +20,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from . import subtitle_style
 from .settings import BASE_DIR
 
 W, H, FPS = 1080, 1920, 30
@@ -72,14 +73,9 @@ def has_audio(path: Path) -> bool:
 
 
 def find_font(fonts_dir: Path) -> Path:
-    cands = sorted(fonts_dir.glob("*.otf")) + sorted(fonts_dir.glob("*.ttf")) + [
-        Path("C:/Windows/Fonts/malgunbd.ttf"), Path("C:/Windows/Fonts/malgun.ttf"),
-        Path("/System/Library/Fonts/AppleSDGothicNeo.ttc"),
-        Path("/Library/Fonts/AppleGothic.ttf")]
-    for c in cands:
-        if c.exists():
-            return c
-    try:  # Pretendard 무료 폰트 자동 다운로드 (SIL OFL 1.1)
+    for c in sorted(fonts_dir.glob("*.otf")) + sorted(fonts_dir.glob("*.ttf")):   # 직접 넣은 폰트가 최우선
+        return c
+    try:  # Pretendard 무료 폰트 자동 다운로드 (SIL OFL 1.1) — 자막이 가장 깔끔하게 나와요
         import requests
         url = ("https://raw.githubusercontent.com/orioncactus/pretendard/main/packages/pretendard/"
                "dist/public/static/Pretendard-Bold.otf")
@@ -91,7 +87,9 @@ def find_font(fonts_dir: Path) -> Path:
         return path
     except Exception:
         pass
-    for c in (Path("/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"),
+    for c in (Path("C:/Windows/Fonts/malgunbd.ttf"), Path("C:/Windows/Fonts/malgun.ttf"),
+              Path("/System/Library/Fonts/AppleSDGothicNeo.ttc"), Path("/Library/Fonts/AppleGothic.ttf"),
+              Path("/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"),
               Path("/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf")):
         if c.exists():
             return c
@@ -104,8 +102,7 @@ def assign_voices(bible: dict, overrides: dict | None = None) -> dict:
     overrides = overrides or {}
     out, count = {}, {"m": 0, "f": 0}
     for c in bible["characters"]:
-        g = "m" if re.search(r"남(성|자)|male|man", c.get("voice", "") + c.get("look_en", ""), re.I) \
-            and not re.search(r"여(성|자)|female|woman", c.get("voice", "")) else "f"
+        g = "m" if subtitle_style.is_male(c) else "f"
         pitch = PITCHES[count[g] % len(PITCHES)]
         count[g] += 1
         o = overrides.get(c["id"]) or {}
@@ -130,16 +127,6 @@ def _wrap(text: str, width: int = 14) -> list[str]:
     for para in text.split("\n"):
         lines += textwrap.wrap(para, width=width, break_long_words=True) or [""]
     return lines
-
-
-def subtitle_png(text: str, font_path: Path, out: Path, size: int = 64, y: int = 1430) -> None:
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    font = ImageFont.truetype(str(font_path), size)
-    for i, line in enumerate(_wrap(text)):
-        d.text((W // 2, y + i * int(size * 1.3)), line, font=font, fill="white", anchor="ma",
-               stroke_width=max(4, size // 12), stroke_fill="black")
-    img.save(out)
 
 
 def placeholder_png(cut: dict, ep_title: str, font_path: Path, out: Path) -> None:
@@ -172,6 +159,7 @@ def plan_cut(cut: dict, voice_files: list[tuple[Path, float]], single_voice: boo
     """컷 길이와 자막·음성 타이밍을 계산합니다. lead = 대사 시작 전 여유(앞 전환이 끝난 뒤).
     반환: (길이, [{text, start, end, audio}])"""
     lines = [d["line"] for d in cut["dialogue"]]
+    speakers = [d["speaker"] for d in cut["dialogue"]]
     events = []
     if single_voice and voice_files:              # 직접 넣은 음성 파일 하나 = 컷 전체 대사
         path, dur = voice_files[0]
@@ -179,18 +167,20 @@ def plan_cut(cut: dict, voice_files: list[tuple[Path, float]], single_voice: boo
         span = dur / max(1, len(lines))
         for i, t in enumerate(lines):
             events.append({"text": t, "start": lead + i * span, "end": lead + (i + 1) * span,
-                           "audio": path if i == 0 else None})
+                           "audio": path if i == 0 else None, "speaker": speakers[i]})
         return length, events
     if voice_files:                               # 대사 줄마다 TTS
         t = lead
         for text, (path, dur) in zip(lines, voice_files):
-            events.append({"text": text, "start": t, "end": t + dur, "audio": path})
+            events.append({"text": text, "start": t, "end": t + dur, "audio": path,
+                           "speaker": speakers[len(events)]})
             t += dur + GAP
         return max(cut["seconds"], t - GAP + TAIL), events
     length = float(cut["seconds"])                # 음성 없음: 자막만 고르게 배치
     if lines:
         span = (length - lead - LEAD) / len(lines)
-        events = [{"text": t, "start": lead + i * span, "end": lead + (i + 1) * span, "audio": None}
+        events = [{"text": t, "start": lead + i * span, "end": lead + (i + 1) * span, "audio": None,
+                   "speaker": speakers[i]}
                   for i, t in enumerate(lines)]
     return length, events
 
@@ -213,8 +203,11 @@ def render_cut(src: Path, kind: str, length: float, events: list[dict], subs: li
     n_in = 1
     chain, last = [vf], "bg"
     for ev, png in zip(events, subs):
-        args += ["-loop", "1", "-t", f"{length:.3f}", "-i", str(png)]
-        chain.append(f"[{last}][{n_in}:v]overlay=0:0:enable='between(t,{ev['start']:.3f},{ev['end']:.3f})'[v{n_in}]")
+        args += ["-loop", "1", "-framerate", str(FPS), "-t", f"{length:.3f}", "-i", str(png)]
+        f = min(0.15, (ev["end"] - ev["start"]) / 3)          # 자막이 부드럽게 나타나고 사라짐
+        chain.append(f"[{n_in}:v]format=rgba,fade=t=in:st={ev['start']:.3f}:d={f:.3f}:alpha=1,"
+                     f"fade=t=out:st={ev['end'] - f:.3f}:d={f:.3f}:alpha=1[s{n_in}]")
+        chain.append(f"[{last}][s{n_in}]overlay=0:0:format=auto[v{n_in}]")
         last = f"v{n_in}"
         n_in += 1
     args += ["-f", "lavfi", "-t", f"{length:.3f}", "-i", "anullsrc=r=44100:cl=stereo"]
@@ -351,6 +344,12 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
     work.mkdir(parents=True, exist_ok=True)
     font = find_font(BASE_DIR / "fonts")
     voices = assign_voices(series["bible"], cfg.get("voices"))
+    style = str(cfg.get("edit", {}).get("subtitle_style", "romance")).lower()
+    style = style if style in subtitle_style.STYLES else "romance"
+    size = int(cfg.get("edit", {}).get("subtitle_size", 58))
+    show_speaker = bool(cfg.get("edit", {}).get("show_speaker", True))
+    colors = subtitle_style.char_colors(series["bible"], cfg.get("edit", {}).get("subtitle_colors"))
+    names = {c["id"]: c["name"] for c in series["bible"]["characters"]}
     ecfg = cfg.get("edit", {})
 
     trans = plan_transitions(ep["cuts"], str(ecfg.get("transition", "auto")))
@@ -396,7 +395,9 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
         subs = []
         for i, ev in enumerate(events):
             png = work / f"{stem}_sub{i + 1}.png"
-            subtitle_png(ev["text"], font, png, int(ecfg.get("subtitle_size", 64)))
+            who = names.get(ev.get("speaker", ""), "")
+            subtitle_style.render(ev["text"], font, png, style, size,
+                                  who if show_speaker else "", colors.get(ev.get("speaker", ""), "#FF8FB1"))
             subs.append(png)
             srt.append((t0 + ev["start"], t0 + ev["end"], ev["text"]))
         seg = work / f"{stem}.mp4"

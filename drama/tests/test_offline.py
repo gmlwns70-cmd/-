@@ -228,3 +228,37 @@ def test_bgm_ducked_under_dialogue(tmp_path):
     final = edit.edit_episode(tmp_path, series, 1, cfg, tts=False, log=lambda *_: None)
     quiet_part, talk_part = _mean_db(final, 1.5, 2.0), _mean_db(final, 6.5, 2.0)
     assert quiet_part - talk_part > 6        # 0.4배 ≈ -8dB
+
+
+# ── 자막 디자인 ─────────────────────────────────────────
+from dramamaker import subtitle_style  # noqa: E402
+
+
+def _font():
+    return edit.find_font(settings.BASE_DIR / "fonts")
+
+
+def test_char_colors_warm_for_women_cool_for_men():
+    c = subtitle_style.char_colors(SAMPLE["bible"])
+    assert c["haeun"] in subtitle_style.FEMALE_COLORS and c["dojun"] in subtitle_style.MALE_COLORS
+    assert subtitle_style.char_colors(SAMPLE["bible"], {"dojun": "#123456"})["dojun"] == "#123456"
+
+
+def test_balanced_wrap_keeps_lines_even():
+    from PIL import ImageFont
+    font = ImageFont.truetype(str(_font()), 58)
+    text = "내일도 비 온다던데. 그럼 우산 하나 더 챙겨 와요, 같이 쓰게."
+    lines = subtitle_style.balanced_wrap(text, font)
+    assert len(lines) == 2 and "".join(lines).replace(" ", "") == text.replace(" ", "")
+    w = [font.getlength(l) for l in lines]
+    assert max(w) - min(w) < 200
+    assert all(font.getlength(l) <= subtitle_style.MAX_W for l in subtitle_style.wrap_px("가" * 80, font))
+
+
+def test_all_styles_render_inside_safe_area(tmp_path):
+    from PIL import Image
+    for style in subtitle_style.STYLES:
+        p = tmp_path / f"{style}.png"
+        subtitle_style.render("그 우산, 제 건데요.", _font(), p, style, 58, "한하은", "#FF8FB1")
+        box = Image.open(p).getchannel("A").point(lambda a: 255 if a > 100 else 0).getbbox()  # 옅은 그림자 제외
+        assert box and box[1] > 1100 and box[3] <= subtitle_style.BOTTOM + 40, (style, box)
