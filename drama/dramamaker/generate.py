@@ -35,7 +35,9 @@ CUT = _obj({
     "video_prompt_en": S, "image_prompt_en": S, "subtitle": S,
     "transition": {"type": "string", "enum": ["cut", "dissolve", "fade_black", "flash_white", "slide"]},
 })
-EPISODE_SCHEMA = _obj({"no": I, "title": S, "thumbnail_text": S, "thumbnail_cut": I,
+UPLOAD = _obj({"titles": {"type": "array", "items": S}, "description": S,
+              "hashtags": {"type": "array", "items": S}})
+EPISODE_SCHEMA = _obj({"no": I, "title": S, "thumbnail_text": S, "thumbnail_cut": I, "upload": UPLOAD,
                         "cuts": {"type": "array", "items": CUT}})
 
 
@@ -129,6 +131,21 @@ def make_episode(cfg: dict, bible: dict, ep_no: int, prev_summary: str = "", cli
     for i, c in enumerate(ep["cuts"], 1):
         c["no"] = i
     return ep
+
+
+def make_upload(cfg: dict, series: dict, ep: dict, client=None) -> dict:
+    """예전에 만든 대본에 업로드 문구만 새로 만들어 붙입니다."""
+    client = client or _client()
+    bible = series["bible"]
+    brief = {"series": {k: bible[k] for k in ("title", "logline", "tone")},
+             "episode": {"no": ep["no"], "title": ep["title"], "total": len(series["episodes"]),
+                         "summary": next((o["summary"] for o in bible["episodes"] if o["no"] == ep["no"]), ""),
+                         "lines": [d["line"] for c in ep["cuts"] for d in c["dialogue"]][:20]}}
+    rules = prompts.EPISODE_SYSTEM.split("- upload:")[1].split("- 세로")[0]
+    msg = _create(client, cfg, system="숏폼 드라마 회차의 업로드 문구를 씁니다.\n- upload:" + rules, max_tokens=8000,
+                  output_config={"effort": "medium", "format": {"type": "json_schema", "schema": UPLOAD}},
+                  messages=[{"role": "user", "content": json.dumps(brief, ensure_ascii=False)}])
+    return _json(msg)
 
 
 def make_series(cfg: dict, client=None, log=print) -> dict:

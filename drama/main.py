@@ -7,6 +7,7 @@
   python main.py edit   output/2026-11-18_우산은_하나뿐   # 컷 영상·음성·자막 → 완성 영상 자동 편집
   python main.py subtitle-preview                     # 자막 스타일 3가지 미리보기 이미지
   python main.py thumbnail output/2026-11-18_우산은_하나뿐  # 썸네일만 다시 만들기 (edit 하면 자동으로도 만들어짐)
+  python main.py upload-text output/2026-11-18_우산은_하나뿐 [--regen]  # 업로드 제목·설명·해시태그
 """
 from __future__ import annotations
 
@@ -110,6 +111,36 @@ def main(argv=None) -> int:
         p.add_argument("--no-tts", action="store_true", help="자동 음성(TTS) 끄기 (자막·원래 소리는 유지)")
         p.add_argument("--config", help="다른 설정 파일을 쓸 때")
         return cmd_edit(p.parse_args(argv[1:]))
+    if argv and argv[0] == "upload-text":
+        p = argparse.ArgumentParser(prog="main.py upload-text", description="업로드 제목·설명·해시태그 만들기")
+        p.add_argument("folder", help="output 안의 결과 폴더")
+        p.add_argument("--regen", action="store_true", help="Claude로 문구를 새로 쓰기 (API 비용 조금 듦)")
+        a = p.parse_args(argv[1:])
+        from dramamaker import upload
+        out = Path(a.folder)
+        if not (out / "series.json").exists():
+            print(f"❌ {out} 안에 series.json 이 없어요. 폴더 경로를 확인해 주세요.")
+            return 1
+        series = json.loads((out / "series.json").read_text(encoding="utf-8"))
+        cfg = settings.load_config(None, series.get("config"))
+        if a.regen:
+            if not settings.has_key("ANTHROPIC_API_KEY"):
+                print("❌ .env 파일에 ANTHROPIC_API_KEY 가 없어요.")
+                return 1
+            from dramamaker import generate
+            for ep in series["episodes"]:
+                print(f"  · EP{ep['no']:02d} 업로드 문구 작성 중...")
+                try:
+                    ep["upload"] = generate.make_upload(cfg, series, ep)
+                except generate.GenerateError as e:
+                    print(f"❌ {e}")
+                    return 1
+            (out / "series.json").write_text(json.dumps(series, ensure_ascii=False, indent=2), encoding="utf-8")
+        for ep in series["episodes"]:
+            f = out / f"07_업로드문구_EP{ep['no']:02d}.txt"
+            upload.write(f, series, ep)
+            print(f"✅ {f}" + ("" if ep.get("upload") else "  (기본 문구. Claude로 쓰려면 --regen)"))
+        return 0
     if argv and argv[0] == "thumbnail":
         p = argparse.ArgumentParser(prog="main.py thumbnail", description="회차 썸네일만 다시 만들기")
         p.add_argument("folder", help="output 안의 결과 폴더")

@@ -5,6 +5,8 @@ import csv
 import json
 from pathlib import Path
 
+from . import upload
+
 
 def char_map(bible: dict) -> dict:
     return {c["id"]: c for c in bible["characters"]}
@@ -128,4 +130,7 @@ def export_all(out: Path, series: dict, cfg: dict) -> list[Path]:
                          (f"04_뉴테이크_프롬프트_{tag}.txt", lambda p: write_paste(p, ep, bible, cfg))):
             fn(out / name)
             files.append(out / name)
+        name = f"07_업로드문구_{tag}.txt"
+        upload.write(out / name, series, ep)
+        files.append(out / name)
     return files

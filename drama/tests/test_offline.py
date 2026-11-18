@@ -292,3 +292,51 @@ def test_make_thumbnails_sizes_and_background_priority(tmp_path):
     files = thumbnail.make_thumbnails(tmp_path, series, 1, _cfg(), log=logs.append)  # 직접 고른 장면이 최우선
     assert "직접 고른 장면" in logs[-1]
     assert Image.open(files[0]).getpixel((540, 700))[1] > 100                         # 초록 배경이 실제로 쓰임
+
+
+# ── 업로드 문구 ─────────────────────────────────────────
+from dramamaker import upload  # noqa: E402
+
+
+def test_upload_tags_clean_dedup_and_limits():
+    series = copy.deepcopy(SAMPLE)
+    ep = series["episodes"][0]
+    ep["upload"]["hashtags"] = ["#로맨스", "로맨스", "설렘 주의", "숏드라마"] + [f"태그{i}" for i in range(30)]
+    b = upload.build(series, ep)
+    yt = [w for w in b["youtube"]["description"].split() if w.startswith("#")]
+    assert yt[:2] == ["#Shorts", "#우산은하나뿐"] and "#설렘주의" in yt and len(yt) == upload.YT_TAG_MAX
+    assert len(yt) == len(set(yt))
+    ig = [w for w in b["instagram"].split() if w.startswith("#")]
+    assert len(ig) == upload.IG_TAG_MAX and "#숏드라마" in ig
+    tt = [w for w in b["tiktok"].split() if w.startswith("#")]
+    assert "#숏드라마" in tt and "#웹드라마" in tt
+
+
+def test_upload_fallback_without_claude_text():
+    series = copy.deepcopy(SAMPLE)
+    ep = series["episodes"][0]
+    del ep["upload"]
+    b = upload.build(series, ep)
+    assert "우산은 하나뿐 EP.01" in b["titles"][0] and b["youtube"]["description"]
+
+
+def test_upload_text_command_and_fake_regen(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "OUTPUT_DIR", tmp_path)
+    assert main.main(["sample"]) == 0
+    out = next(tmp_path.iterdir())
+    text = (out / "07_업로드문구_EP01.txt").read_text(encoding="utf-8")
+    assert "변경되거나 합성된 콘텐츠" in text and "#Shorts" in text
+
+    class Fake(FakeClient):
+        @contextmanager
+        def _stream(self, **params):
+            self.calls.append(params)
+            data = {"titles": ["새 제목"], "description": "새 설명", "hashtags": ["새태그"]}
+            msg = SimpleNamespace(stop_reason="end_turn",
+                                  content=[SimpleNamespace(type="text", text=json.dumps(data, ensure_ascii=False))])
+            yield SimpleNamespace(get_final_message=lambda: msg)
+    fake = Fake()
+    series = json.loads((out / "series.json").read_text(encoding="utf-8"))
+    up = generate.make_upload(_cfg(), series, series["episodes"][0], client=fake)
+    assert up["titles"] == ["새 제목"] and fake.calls[0]["output_config"]["format"]["schema"] is generate.UPLOAD
+    assert "그 우산, 제 건데요." in fake.calls[0]["messages"][0]["content"]

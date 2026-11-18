@@ -28,6 +28,14 @@ SAMPLE = {
     "episodes": [{
         "no": 1, "title": "그 우산, 제 건데요",
         "thumbnail_text": "우산 하나에\n심장이 철렁", "thumbnail_cut": 1,
+        "upload": {
+            "titles": ["우산 하나 때문에 시작된 심쿵 오해 ☔", "우산은 하나뿐 EP.01 | 그 우산, 제 건데요",
+                       "비 오는 정류장, 모르는 남자와 같은 우산을 잡았다"],
+            "description": "비 오는 날 정류장에서 같은 우산을 동시에 잡은 하은과 도준. "
+                           "당당하게 우산을 가져온 하은은 집에 와서야 진실을 알게 되는데…\n"
+                           "여러분이라면 다음 날 우산을 돌려주러 가실 건가요? 댓글로 알려 주세요!",
+            "hashtags": ["로맨스", "설렘주의", "비오는날", "우산", "오해", "현실로맨스"],
+        },
         "cuts": [
             {"no": 1, "seconds": 5, "location": "bus stop", "time_of_day": "rainy evening",
              "characters": ["haeun", "dojun"], "shot": "close-up", "camera_move": "slow push-in",
