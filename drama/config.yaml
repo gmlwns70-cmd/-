@@ -1,0 +1,22 @@
+# ─────────────────────────────────────────────────────────────
+#  숏폼 드라마 설정 파일
+#  메모장으로 열어 값을 바꾸고 저장하면 됩니다.
+#  명령어에 --idea 같은 값을 직접 쓰면 그 값이 이 파일보다 우선합니다.
+#  (# 뒤의 글은 설명이라서 프로그램이 읽지 않습니다)
+# ─────────────────────────────────────────────────────────────
+
+idea: ""                      # 한 줄 아이디어 (예: 비 오는 날 우산 하나로 엮인 꽃집 사장과 건축가)
+genre: "로맨스"                # 장르
+episodes: 3                   # 회차 수 (1~20)
+seconds: 60                   # 회당 길이(초). 숏폼은 60~90 추천
+aspect: "9:16"                # 화면 비율 (세로 숏폼 = 9:16)
+cut_min: 3                    # 컷 하나의 최소 길이(초)
+cut_max: 8                    # 컷 하나의 최대 길이(초). 뉴테이크에서 한 번에 만들 수 있는 길이에 맞추세요
+
+# 모든 컷 프롬프트 끝에 붙는 공통 화풍 (영어로 쓰는 게 영상 AI가 더 잘 알아들어요)
+visual_style: "cinematic Korean drama look, soft natural lighting, shallow depth of field, photorealistic, 35mm film tone"
+
+claude:
+  model: claude-opus-5-5      # 대본을 쓰는 Claude 모델
+  effort: high                # 생각의 깊이: low / medium / high / xhigh / max
+  use_fallback: true          # 요청이 거절되면 다른 모델로 자동 재시도

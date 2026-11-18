@@ -1,0 +1,97 @@
+"""숏폼 AI 드라마: 아이디어 한 줄 → 대본 → 컷별 영상 프롬프트 생성기
+
+사용법
+  python main.py --idea "비 오는 날 우산 하나로 엮인 꽃집 사장과 건축가" --episodes 3 --seconds 60
+  python main.py sample                              # API 키 없이 결과물 미리보기
+  python main.py export output/2026-11-18_우산은_하나뿐   # series.json 을 고친 뒤 다시 내보내기
+"""
+from __future__ import annotations
+
+import argparse
+import copy
+import json
+import sys
+from pathlib import Path
+
+from dramamaker import check, export, settings
+
+
+def _finish(out: Path, series: dict, cfg: dict) -> None:
+    check.fix(series, cfg)
+    files = export.export_all(out, series, cfg)
+    rep = check.report(series, cfg)
+    (out / "검수.txt").write_text(rep, encoding="utf-8")
+    print("\n" + rep)
+    print(f"\n✅ 완성! 결과 폴더: {out}")
+    for f in files[1:]:
+        print(f"   - {f.name}")
+
+
+def cmd_generate(args) -> int:
+    cfg = settings.load_config(Path(args.config) if args.config else None, {
+        "idea": args.idea, "genre": args.genre, "episodes": args.episodes, "seconds": args.seconds})
+    if not cfg["idea"]:
+        print("❌ 아이디어가 없어요. --idea \"한 줄 아이디어\" 를 붙이거나 config.yaml 의 idea 를 채워 주세요.")
+        return 1
+    if not settings.has_key("ANTHROPIC_API_KEY"):
+        print("❌ .env 파일에 ANTHROPIC_API_KEY 가 없어요. README의 'API 키 넣기'를 봐 주세요.")
+        return 1
+    from dramamaker import generate
+    print(f"▶ 아이디어: {cfg['idea']}\n  장르: {cfg['genre']} / {cfg['episodes']}회 / 회당 약 {cfg['seconds']}초")
+    try:
+        series = generate.make_series(cfg)
+    except generate.GenerateError as e:
+        print(f"❌ {e}")
+        return 1
+    series["config"] = {k: cfg[k] for k in ("idea", "genre", "episodes", "seconds", "aspect",
+                                             "cut_min", "cut_max", "visual_style")}
+    _finish(settings.new_output_dir(series["bible"]["title"]), series, cfg)
+    return 0
+
+
+def cmd_sample(args) -> int:
+    from dramamaker.sample import SAMPLE
+    cfg = settings.load_config(Path(args.config) if args.config else None, {"episodes": 1, "seconds": 60})
+    series = copy.deepcopy(SAMPLE)
+    _finish(settings.new_output_dir("샘플_" + series["bible"]["title"]), series, cfg)
+    return 0
+
+
+def cmd_export(args) -> int:
+    out = Path(args.folder)
+    src = out / "series.json"
+    if not src.exists():
+        print(f"❌ {out} 안에 series.json 이 없어요. 폴더 경로를 확인해 주세요.")
+        return 1
+    try:
+        series = json.loads(src.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"❌ series.json 을 고치다 형식이 깨졌어요 ({e.lineno}번째 줄 근처). 따옴표·쉼표를 확인해 주세요.")
+        return 1
+    cfg = settings.load_config(Path(args.config) if args.config else None, series.get("config"))
+    _finish(out, series, cfg)
+    return 0
+
+
+def main(argv=None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in ("sample", "export"):
+        p = argparse.ArgumentParser(prog=f"main.py {argv[0]}")
+        if argv[0] == "export":
+            p.add_argument("folder", help="output 안의 결과 폴더")
+        p.add_argument("--config", help="다른 설정 파일을 쓸 때")
+        args = p.parse_args(argv[1:])
+        return cmd_sample(args) if argv[0] == "sample" else cmd_export(args)
+
+    p = argparse.ArgumentParser(description="숏폼 AI 드라마 대본 → 컷 프롬프트 생성기")
+    p.add_argument("--idea", help="한 줄 아이디어")
+    p.add_argument("--genre", help="장르 (기본: 로맨스)")
+    p.add_argument("--episodes", type=int, help="회차 수 (1~20)")
+    p.add_argument("--seconds", type=int, help="회당 길이(초, 20~180)")
+    p.add_argument("--config", help="다른 설정 파일을 쓸 때")
+    return cmd_generate(p.parse_args(argv))
+
+
+if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")
+    raise SystemExit(main())

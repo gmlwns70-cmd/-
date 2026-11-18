@@ -1,0 +1,7 @@
+# ===== 필수 패키지 =====
+anthropic>=1.0        # 대본 생성 (Claude API)
+pyyaml>=6.0           # config.yaml 읽기
+python-dotenv>=1.0    # .env(API 키) 읽기
+
+# ===== 테스트용 =====
+pytest>=8.0
