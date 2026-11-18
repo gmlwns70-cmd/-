@@ -210,3 +210,21 @@ def test_failed_tts_leaves_no_broken_cache(tmp_path):
     assert not [f for f in (tmp_path / "_편집작업" / "EP01").glob("*.mp3")]
     final = edit.edit_episode(tmp_path, series, 1, _cfg(), tts=True, synth=_tone, log=lambda *_: None)
     assert edit.media_duration(final) > 1
+
+
+def test_duck_expr_merges_close_spans():
+    assert edit.duck_volume_expr([], 0.4) == "" and edit.duck_volume_expr([(1, 2)], 1.0) == ""
+    e = edit.duck_volume_expr([(1.0, 2.0), (3.0, 4.0), (6.0, 7.0)], 0.4)
+    assert e.count("clip((t-") == 2 and "1-0.600*" in e      # 1~4초는 하나로 합쳐짐 (간격 1초)
+
+
+def test_bgm_ducked_under_dialogue(tmp_path):
+    series = copy.deepcopy(SAMPLE)
+    series["episodes"][0]["cuts"] = series["episodes"][0]["cuts"][:2]   # 컷1 대사 없음, 컷2 대사 5.3~9.7초
+    (tmp_path / "clips").mkdir()
+    edit._run(["-f", "lavfi", "-i", "sine=f=330", "-t", "15", str(tmp_path / "clips" / "bgm.mp3")])
+    cfg = _cfg()
+    cfg["edit"]["end_fade"] = 0
+    final = edit.edit_episode(tmp_path, series, 1, cfg, tts=False, log=lambda *_: None)
+    quiet_part, talk_part = _mean_db(final, 1.5, 2.0), _mean_db(final, 6.5, 2.0)
+    assert quiet_part - talk_part > 6        # 0.4배 ≈ -8dB

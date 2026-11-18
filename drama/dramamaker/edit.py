@@ -315,6 +315,24 @@ def join_segments(segs: list[Path], lengths: list[float], trans: list[str], out:
     _run(args)
 
 
+def duck_volume_expr(spans: list[tuple[float, float]], duck: float, ramp: float = 0.3) -> str:
+    """대사 구간마다 배경음악을 duck 배로 줄이는 볼륨 필터. 갑자기 툭 줄지 않게 ramp 초 동안 서서히 줄고 돌아옵니다.
+    줄일 구간이 없거나 duck >= 1 이면 빈 문자열."""
+    if not spans or duck >= 1:
+        return ""
+    merged: list[list[float]] = []
+    for a, b in sorted(spans):                       # 가까운 대사 구간은 하나로 합침 (사이에 음악이 출렁이지 않게)
+        if merged and a - merged[-1][1] < max(2 * ramp, 1.5):   # 주고받는 대화 중엔 계속 낮게
+            merged[-1][1] = max(merged[-1][1], b)
+        else:
+            merged.append([a, b])
+    terms = [f"clip((t-{a - ramp:.3f})/{ramp},0,1)*clip(({b + ramp:.3f}-t)/{ramp},0,1)" for a, b in merged]
+    m = terms[0]
+    for t in terms[1:]:
+        m = f"max({m},{t})"
+    return f"volume=eval=frame:volume='1-{1 - duck:.3f}*{m}',"
+
+
 # ── 회차 전체 ───────────────────────────────────────────
 def _srt_time(t: float) -> str:
     ms = int(round(t * 1000))
@@ -401,8 +419,9 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
     if bgm:
         vol = float(ecfg.get("bgm_volume", 0.12))
         fade = max(0.0, t0 - 2)
+        duck = duck_volume_expr([(a, b) for a, b, _ in srt], float(ecfg.get("bgm_duck", 0.4)))
         _run(["-i", str(joined), "-stream_loop", "-1", "-i", str(bgm), "-filter_complex",
-              f"[1:a]volume={vol},afade=t=in:d=1,afade=t=out:st={fade:.2f}:d=2[b];"
+              f"[1:a]volume={vol},{duck}afade=t=in:d=1,afade=t=out:st={fade:.2f}:d=2[b];"
               f"[0:a][b]amix=inputs=2:duration=first:normalize=0[a]",
               "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k",
               "-t", f"{t0:.3f}", str(final)])
