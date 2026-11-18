@@ -33,6 +33,7 @@ CUT = _obj({
     "dialogue": {"type": "array", "items": LINE},
     "emotion": S, "sound": S,
     "video_prompt_en": S, "image_prompt_en": S, "subtitle": S,
+    "transition": {"type": "string", "enum": ["cut", "dissolve", "fade_black", "flash_white", "slide"]},
 })
 EPISODE_SCHEMA = _obj({"no": I, "title": S, "cuts": {"type": "array", "items": CUT}})
 

@@ -60,6 +60,8 @@ def write_script(path: Path, ep: dict, bible: dict) -> None:
                   f"- 감정: {c['emotion']}   · 소리: {c['sound']}"]
         for d in c["dialogue"]:
             lines.append(f"- **{chars.get(d['speaker'], {}).get('name', d['speaker'])}**: \"{d['line']}\"")
+        if c.get("transition", "cut") != "cut":
+            lines.append(f"- ↪ 다음 컷으로: {c['transition']}")
         lines.append("")
         t += c["seconds"]
     path.write_text("\n".join(lines), encoding="utf-8")
@@ -70,11 +72,11 @@ def write_csv(path: Path, ep: dict, bible: dict, cfg: dict) -> None:
     with open(path, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)
         w.writerow(["컷", "초", "장소", "시간대", "등장인물", "샷", "카메라", "행동", "대사", "자막",
-                    "감정", "소리", "영상 프롬프트(뉴테이크)", "시작 이미지 프롬프트", "상태"])
+                    "감정", "소리", "전환", "영상 프롬프트(뉴테이크)", "시작 이미지 프롬프트", "상태"])
         for c in ep["cuts"]:
             w.writerow([c["no"], c["seconds"], c["location"], c["time_of_day"], ", ".join(c["characters"]),
                         c["shot"], c["camera_move"], c["action_ko"], _dialogue_text(c, bible), c["subtitle"],
-                        c["emotion"], c["sound"], full_prompt(c, bible, cfg, "video"),
+                        c["emotion"], c["sound"], c.get("transition", ""), full_prompt(c, bible, cfg, "video"),
                         full_prompt(c, bible, cfg, "image"), "대기"])
 
 

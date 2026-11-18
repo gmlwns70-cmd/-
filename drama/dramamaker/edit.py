@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import math
 import re
 import shutil
 import subprocess
@@ -166,28 +167,30 @@ def _find(folder: Path, stem: str, exts: tuple) -> Path | None:
 
 
 # ── 컷 하나 만들기 ──────────────────────────────────────
-def plan_cut(cut: dict, voice_files: list[tuple[Path, float]], single_voice: bool) -> tuple[float, list[dict]]:
-    """컷 길이와 자막·음성 타이밍을 계산합니다. 반환: (길이, [{text, start, end, audio}])"""
+def plan_cut(cut: dict, voice_files: list[tuple[Path, float]], single_voice: bool,
+             lead: float = LEAD) -> tuple[float, list[dict]]:
+    """컷 길이와 자막·음성 타이밍을 계산합니다. lead = 대사 시작 전 여유(앞 전환이 끝난 뒤).
+    반환: (길이, [{text, start, end, audio}])"""
     lines = [d["line"] for d in cut["dialogue"]]
     events = []
     if single_voice and voice_files:              # 직접 넣은 음성 파일 하나 = 컷 전체 대사
         path, dur = voice_files[0]
-        length = max(cut["seconds"], LEAD + dur + TAIL)
+        length = max(cut["seconds"], lead + dur + TAIL)
         span = dur / max(1, len(lines))
         for i, t in enumerate(lines):
-            events.append({"text": t, "start": LEAD + i * span, "end": LEAD + (i + 1) * span,
+            events.append({"text": t, "start": lead + i * span, "end": lead + (i + 1) * span,
                            "audio": path if i == 0 else None})
         return length, events
     if voice_files:                               # 대사 줄마다 TTS
-        t = LEAD
+        t = lead
         for text, (path, dur) in zip(lines, voice_files):
             events.append({"text": text, "start": t, "end": t + dur, "audio": path})
             t += dur + GAP
         return max(cut["seconds"], t - GAP + TAIL), events
     length = float(cut["seconds"])                # 음성 없음: 자막만 고르게 배치
     if lines:
-        span = (length - 2 * LEAD) / len(lines)
-        events = [{"text": t, "start": LEAD + i * span, "end": LEAD + (i + 1) * span, "audio": None}
+        span = (length - lead - LEAD) / len(lines)
+        events = [{"text": t, "start": lead + i * span, "end": lead + (i + 1) * span, "audio": None}
                   for i, t in enumerate(lines)]
     return length, events
 
@@ -241,6 +244,77 @@ def render_cut(src: Path, kind: str, length: float, events: list[dict], subs: li
     _run(args)
 
 
+# ── 장면 전환 ───────────────────────────────────────────
+# 이름: (ffmpeg xfade 효과, 길이초).  cut = 효과 없이 바로 넘어감
+TRANSITIONS = {
+    "cut": (None, 0.0),
+    "dissolve": ("fade", 0.5),          # 부드럽게 겹치며 넘어감 (장소가 바뀔 때)
+    "fade_black": ("fadeblack", 0.8),   # 검은 화면을 거쳐 넘어감 (시간이 흐를 때)
+    "flash_white": ("fadewhite", 0.4),  # 하얗게 번쩍 (회상·충격·설렘 순간)
+    "slide": ("slideleft", 0.4),        # 옆으로 밀어내기
+}
+TIME_JUMP = re.compile(r"next|later|morning after|days?|weeks?|다음|며칠|후|뒤", re.I)
+
+
+def plan_transitions(cuts: list[dict], mode: str = "auto") -> list[str]:
+    """컷 사이(n-1개)의 전환 효과를 정합니다.
+    auto: 대본에 적힌 전환을 따르고, 없으면 시간이 흐르면 fade_black, 장소/시간대가 바뀌면 dissolve, 아니면 cut.
+    none: 모두 cut.  그 밖의 이름(dissolve 등): 모든 컷 사이에 그 효과."""
+    mode = (mode or "auto").strip().lower()
+    if mode in ("none", "off", "cut"):
+        return ["cut"] * max(0, len(cuts) - 1)
+    if mode in TRANSITIONS:
+        return [mode] * max(0, len(cuts) - 1)
+    out = []
+    for a, b in zip(cuts, cuts[1:]):
+        t = a.get("transition", "")
+        if t not in TRANSITIONS:
+            if a["time_of_day"] != b["time_of_day"] and TIME_JUMP.search(b["time_of_day"]):
+                t = "fade_black"
+            elif a["location"] != b["location"] or a["time_of_day"] != b["time_of_day"]:
+                t = "dissolve"
+            else:
+                t = "cut"
+        out.append(t)
+    return out
+
+
+def join_segments(segs: list[Path], lengths: list[float], trans: list[str], out: Path,
+                  end_fade: float = 0.0) -> None:
+    """컷 영상을 이어 붙입니다. 각 컷은 다음 전환 길이만큼 미리 늘려 두었기 때문에,
+    전환이 있어도 전체 길이와 자막 시간은 바뀌지 않습니다."""
+    total = sum(lengths)
+    if all(t == "cut" for t in trans) and end_fade <= 0:      # 효과 없음: 다시 인코딩하지 않고 빠르게
+        listfile = out.with_suffix(".txt")
+        listfile.write_text("".join(f"file '{s.resolve().as_posix()}'\n" for s in segs), encoding="utf-8")
+        _run(["-f", "concat", "-safe", "0", "-i", str(listfile), "-c", "copy", str(out)])
+        return
+    args, chain = [], []
+    for i, s in enumerate(segs):
+        args += ["-i", str(s)]
+        chain.append(f"[{i}:v]fps={FPS},settb=AVTB,setpts=PTS-STARTPTS[sv{i}]")  # 시간 기준을 모두 같게
+        chain.append(f"[{i}:a]aresample=44100,asetpts=PTS-STARTPTS[sa{i}]")
+    v, a, acc = "[sv0]", "[sa0]", lengths[0]
+    for i in range(1, len(segs)):
+        name, d = TRANSITIONS[trans[i - 1]]
+        if name is None:
+            chain.append(f"{v}{a}[sv{i}][sa{i}]concat=n=2:v=1:a=1[v{i}][a{i}]")
+        else:
+            chain.append(f"{v}[sv{i}]xfade=transition={name}:duration={d}:offset={acc:.4f},settb=AVTB[v{i}]")
+            chain.append(f"{a}[sa{i}]acrossfade=d={d}[a{i}]")
+        v, a = f"[v{i}]", f"[a{i}]"
+        acc += lengths[i]
+    if end_fade > 0:
+        st = max(0.0, total - end_fade)
+        chain.append(f"{v}fade=t=out:st={st:.3f}:d={end_fade}[vend]")
+        chain.append(f"{a}afade=t=out:st={st:.3f}:d={end_fade}[aend]")
+        v, a = "[vend]", "[aend]"
+    args += ["-filter_complex", ";".join(chain), "-map", v, "-map", a, "-t", f"{total:.3f}",
+             "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-r", str(FPS),
+             "-c:a", "aac", "-b:a", "160k", "-ar", "44100", str(out)]
+    _run(args)
+
+
 # ── 회차 전체 ───────────────────────────────────────────
 def _srt_time(t: float) -> str:
     ms = int(round(t * 1000))
@@ -261,8 +335,11 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
     voices = assign_voices(series["bible"], cfg.get("voices"))
     ecfg = cfg.get("edit", {})
 
-    segs, srt, t0, counts = [], [], 0.0, {"video": 0, "image": 0, "placeholder": 0, "clip_audio": 0}
-    for cut in ep["cuts"]:
+    trans = plan_transitions(ep["cuts"], str(ecfg.get("transition", "auto")))
+    pads = [TRANSITIONS[t][1] for t in trans] + [0.0]
+    segs, lengths, srt, t0 = [], [], [], 0.0
+    counts = {"video": 0, "image": 0, "placeholder": 0, "clip_audio": 0}
+    for idx, cut in enumerate(ep["cuts"]):
         stem = f"cut{cut['no']:02d}"
         src, kind = _find(clip_dir, stem, VIDEO_EXT), "video"
         if not src:
@@ -282,8 +359,12 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
                     v = voices.get(d["speaker"], {"voice": FEMALE, "pitch": "+0Hz", "rate": "+0%"})
                     key = hashlib.md5(f"{d['line']}|{v}".encode()).hexdigest()[:10]
                     mp3 = work / f"{stem}_{i + 1}_{key}.mp3"
-                    if not mp3.exists():
-                        synth(d["line"], v, mp3)
+                    if not mp3.exists() or mp3.stat().st_size == 0:   # 빈 파일 = 지난번 실패 → 다시 생성
+                        try:
+                            synth(d["line"], v, mp3)
+                        except BaseException:
+                            mp3.unlink(missing_ok=True)
+                            raise
                     voice_files.append((mp3, media_duration(mp3)))
             except EditError:
                 raise
@@ -291,7 +372,9 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
                 log(f"  ⚠ 음성(TTS) 생성 실패 → 이번 편집은 자막만 넣어요. 인터넷 연결을 확인하세요. ({type(e).__name__})")
                 tts, voice_files = False, []
 
-        length, events = plan_cut(cut, voice_files, single)
+        lead = max(LEAD, pads[idx - 1] + 0.1) if idx > 0 and pads[idx - 1] > 0 else LEAD  # 전환이 끝난 뒤 대사 시작
+        length, events = plan_cut(cut, voice_files, single, lead)
+        length = math.ceil(length * FPS - 1e-6) / FPS             # 프레임 단위로 맞춤
         subs = []
         for i, ev in enumerate(events):
             png = work / f"{stem}_sub{i + 1}.png"
@@ -299,19 +382,19 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
             subs.append(png)
             srt.append((t0 + ev["start"], t0 + ev["end"], ev["text"]))
         seg = work / f"{stem}.mp4"
-        log(f"  · 컷 {cut['no']:>2} ({kind}, {length:.1f}초)")
+        nxt = f" → {trans[idx]}" if idx < len(trans) and trans[idx] != "cut" else ""
+        log(f"  · 컷 {cut['no']:>2} ({kind}, {length:.1f}초){nxt}")
         cvol = float(ecfg.get("clip_volume", 0.7)) if kind == "video" and has_audio(src) else 0.0
         counts["clip_audio"] += cvol > 0
-        render_cut(src, "video" if kind == "video" else "image", length, events, subs, seg,
+        render_cut(src, "video" if kind == "video" else "image", length + pads[idx], events, subs, seg,
                    cvol, float(ecfg.get("clip_duck", 0.35)))
         segs.append(seg)
+        lengths.append(length)
         t0 += length
 
-    # 이어 붙이기
-    listfile = work / "concat.txt"
-    listfile.write_text("".join(f"file '{s.resolve().as_posix()}'\n" for s in segs), encoding="utf-8")
+    # 이어 붙이기 (장면 전환 포함)
     joined = work / "joined.mp4"
-    _run(["-f", "concat", "-safe", "0", "-i", str(listfile), "-c", "copy", str(joined)])
+    join_segments(segs, lengths, trans, joined, float(ecfg.get("end_fade", 1.0)))
 
     final = out_dir / f"05_완성_{tag}.mp4"
     bgm = _find(out_dir / "clips", "bgm", AUDIO_EXT)
@@ -331,5 +414,6 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
         encoding="utf-8")
     log(f"  · 영상 {counts['video']}컷 / 이미지 {counts['image']}컷 / 대기 화면 {counts['placeholder']}컷"
         + f" / 원본 소리 {counts['clip_audio']}컷"
+        + f" / 전환 효과 {sum(t != 'cut' for t in trans)}곳"
         + (" / 배경음악 O" if bgm else " / 배경음악 없음") + (" / 음성 O" if tts else " / 음성 없음(자막만)"))
     return final

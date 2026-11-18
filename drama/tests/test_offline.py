@@ -157,3 +157,56 @@ def test_clip_original_sound_kept_and_ducked_under_dialogue(tmp_path):
     muted = tmp_path / "muted.mp4"
     edit.render_cut(src, "video", 4.0, ev, [], muted, clip_volume=0.0)
     assert _mean_db(muted, 0.5, 1.0) < -80    # clip_volume 0 이면 끔
+
+
+def test_plan_transitions_modes():
+    cuts = [{"location": "bus stop", "time_of_day": "evening"},
+            {"location": "bus stop", "time_of_day": "evening"},
+            {"location": "shop", "time_of_day": "evening"},
+            {"location": "shop", "time_of_day": "next morning"},
+            {"location": "shop", "time_of_day": "next morning", "transition": "flash_white"},
+            {"location": "park", "time_of_day": "noon"}]
+    assert edit.plan_transitions(cuts, "auto") == ["cut", "dissolve", "fade_black", "cut", "flash_white"]
+    assert edit.plan_transitions(cuts, "none") == ["cut"] * 5
+    assert edit.plan_transitions(cuts, "slide") == ["slide"] * 5
+
+
+def test_transitions_keep_total_length_and_subtitle_timing(tmp_path):
+    series = copy.deepcopy(SAMPLE)
+    series["episodes"][0]["cuts"] = series["episodes"][0]["cuts"][3:7]   # dissolve, fade_black, flash_white 포함
+    cfg = _cfg()
+    final = edit.edit_episode(tmp_path, series, 1, cfg, tts=False, log=lambda *_: None)
+    total = sum(c["seconds"] for c in series["episodes"][0]["cuts"])
+    assert abs(edit.media_duration(final) - total) < 0.15
+    srt = (tmp_path / "05_자막_EP01.srt").read_text(encoding="utf-8")
+    assert "00:00:00,300 --> " in srt and "00:00:12,900 --> " in srt   # 컷6 대사는 fade_black(0.8초)이 끝난 뒤
+
+
+def test_join_mixed_cut_then_transitions(tmp_path):
+    """바로 넘어가기(cut) 뒤에 전환 효과가 오는 순서 (실제 샘플에서 나왔던 오류 재현)."""
+    lengths, trans = [1.0, 1.0, 1.0, 1.0], ["cut", "dissolve", "cut"]
+    pads = [edit.TRANSITIONS[t][1] for t in trans] + [0.0]
+    segs = []
+    for i, (L, pad) in enumerate(zip(lengths, pads)):
+        seg = tmp_path / f"s{i}.mp4"
+        edit._run(["-f", "lavfi", "-i", f"color=c=red:s={edit.W}x{edit.H}:r={edit.FPS}", "-f", "lavfi",
+                   "-i", "anullsrc=r=44100:cl=stereo", "-t", f"{L + pad}", "-c:v", "libx264", "-pix_fmt",
+                   "yuv420p", "-c:a", "aac", str(seg)])
+        segs.append(seg)
+    out = tmp_path / "joined.mp4"
+    edit.join_segments(segs, lengths, trans, out, end_fade=0.5)
+    assert abs(edit.media_duration(out) - 4.0) < 0.15
+
+
+def test_failed_tts_leaves_no_broken_cache(tmp_path):
+    series = copy.deepcopy(SAMPLE)
+    series["episodes"][0]["cuts"] = series["episodes"][0]["cuts"][1:2]   # 대사 있는 컷 하나
+
+    def broken(text, voice, out):
+        out.write_bytes(b"")                     # edge-tts 가 실패할 때처럼 빈 파일을 남김
+        raise OSError("network down")
+
+    edit.edit_episode(tmp_path, series, 1, _cfg(), tts=True, synth=broken, log=lambda *_: None)
+    assert not [f for f in (tmp_path / "_편집작업" / "EP01").glob("*.mp3")]
+    final = edit.edit_episode(tmp_path, series, 1, _cfg(), tts=True, synth=_tone, log=lambda *_: None)
+    assert edit.media_duration(final) > 1
