@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import re
 import json
 from pathlib import Path
 
@@ -12,20 +13,41 @@ def char_map(bible: dict) -> dict:
     return {c["id"]: c for c in bible["characters"]}
 
 
+HANGUL = re.compile(r"[\u3131-\u318e\uac00-\ud7a3]")
+
+
+def _en(text: str) -> str:
+    """영어 프롬프트에 한글이 섞이면 이미지·영상 AI가 글자를 화면에 그려 넣을 수 있어 뺍니다."""
+    text = str(text or "").strip()
+    return "" if HANGUL.search(text) else text
+
+
+def _sentence(text: str) -> str:
+    text = text.strip().rstrip(".").strip()
+    return text + "." if text else ""
+
+
 def full_prompt(cut: dict, bible: dict, cfg: dict, kind: str = "video") -> str:
-    """컷 프롬프트 앞에 등장인물 고정 외모를 붙여, 어느 컷에서도 같은 얼굴이 나오게 합니다."""
+    """컷 프롬프트 앞에 등장인물 고정 외모를 붙여, 어느 컷에서도 같은 얼굴이 나오게 합니다.
+    한글이 들어 있는 항목(장소·카메라·감정 등을 한국어로 쓴 경우)은 영어 프롬프트에서 뺍니다."""
     chars = char_map(bible)
-    looks = [f"{cid}: {chars[cid]['look_en']}" for cid in cut["characters"] if cid in chars]
+    looks = [f"{cid}: {_sentence(chars[cid]['look_en'])[:-1]}" for cid in cut["characters"]
+             if cid in chars and _en(chars[cid]["look_en"])]
     body = cut["video_prompt_en"] if kind == "video" else cut["image_prompt_en"]
     parts = []
     if looks:
         parts.append("Characters — " + " | ".join(looks) + ".")
-    body = body.strip()
-    parts.append(body if body.endswith((".", "!", "?")) else body + ".")
-    parts.append(f"Shot: {cut['shot']}, camera: {cut['camera_move']}.")
-    parts.append(f"Setting: {cut['location']}, {cut['time_of_day']}. Mood: {cut['emotion']}.")
+    parts.append(_sentence(body))
+    shot = ", ".join(x for x in (_en(cut["shot"]), f"camera: {_en(cut['camera_move'])}" if _en(cut["camera_move"]) else "") if x)
+    if shot:
+        parts.append(f"Shot: {shot}.")
+    setting = ", ".join(x for x in (_en(cut["location"]), _en(cut["time_of_day"])) if x)
+    if setting:
+        parts.append(f"Setting: {setting}.")
+    if _en(cut["emotion"]):
+        parts.append(f"Mood: {_en(cut['emotion'])}.")
     parts.append(f"Style: {cfg['visual_style']}. Vertical {cfg['aspect']} frame. No text, no subtitles, no watermark.")
-    return " ".join(parts)
+    return " ".join(p for p in parts if p)
 
 
 def _dialogue_text(cut: dict, bible: dict) -> str:

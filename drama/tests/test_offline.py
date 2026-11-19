@@ -487,3 +487,16 @@ def test_character_portrait_prompt_forbids_text(tmp_path):
     export.write_characters(p, SAMPLE["bible"], _cfg())
     text = p.read_text(encoding="utf-8")
     assert text.count("No text, no letters, no captions, no logo, no watermark.") == len(SAMPLE["bible"]["characters"])
+
+
+def test_full_prompt_drops_korean_fields_and_double_periods():
+    """실제 대본: 장소·카메라·감정을 한국어로 써서 영어 프롬프트에 한글이 섞였던 문제."""
+    bible = copy.deepcopy(SAMPLE["bible"])
+    bible["characters"][0]["look_en"] += "."                       # 끝에 마침표가 있어도 '..' 가 되지 않게
+    cut = dict(SAMPLE["episodes"][0]["cuts"][1], location="골목 끝 소담화원 가게 앞", camera_move="핸드헬드",
+               time_of_day="늦은 오후, 폭우", emotion="당황")
+    p = export.full_prompt(cut, bible, _cfg(), "image")
+    assert not export.HANGUL.search(p) and ".." not in p
+    assert "Shot: medium close-up." in p and "Setting" not in p and "Mood" not in p
+    p2 = export.full_prompt(SAMPLE["episodes"][0]["cuts"][1], SAMPLE["bible"], _cfg(), "video")
+    assert "Setting: bus stop, rainy evening." in p2 and "camera: static" in p2   # 영어로 쓴 항목은 그대로
