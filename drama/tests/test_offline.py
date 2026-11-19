@@ -420,3 +420,62 @@ def test_voice_summary_is_honest():
     assert edit._voice_summary(0, 5, set()) == " / 음성 없음(자막만)"
     assert "섞임" in edit._voice_summary(5, 5, {"edge", "windows"})
     assert edit._voice_summary(0, 0, set()) == " / 대사 없음"
+
+
+# ── Claude 대화창 연결 ─────────────────────────────────
+from dramamaker import chat_bridge  # noqa: E402
+
+
+def test_chat_prompt_contains_rules_and_example():
+    text = chat_bridge.build_prompt(_cfg(episodes=2, seconds=60), "꽃집 사장과 건축가")
+    assert "꽃집 사장과 건축가" in text and "2회" in text and "```json" in text
+    assert "look_en" in text and "thumbnail_text" in text and "다음 화" in text
+
+
+def test_extract_json_handles_messy_answers():
+    body = json.dumps({"bible": {"title": "t"}, "episodes": []}, ensure_ascii=False)
+    assert chat_bridge.extract_json(f"네, 써 드릴게요!\n```json\n{body}\n```\n즐거운 제작 되세요")["bible"]["title"] == "t"
+    assert chat_bridge.extract_json('{"a": [1, 2,], "b": 1,}') == {"a": [1, 2], "b": 1}   # 끝 쉼표
+    for bad, word in (('{"bible": {"title": "끊김"', "끊긴"), ("그냥 글", "찾지 못했어요")):
+        try:
+            chat_bridge.extract_json(bad)
+            assert False
+        except chat_bridge.ImportError_ as e:
+            assert word in str(e)
+
+
+def test_normalize_fills_missing_fields():
+    raw = {"bible": {"title": "제목", "characters": [{"name": "소담", "age": "29세"}]},
+           "episodes": [{"title": "1화", "thumbnail_text": "첫 줄\\n둘째 줄",
+                         "cuts": [{"seconds": "5초", "dialogue": [{"speaker": "소담", "line": " 안녕 "}, "잘못된 값"]}]}]}
+    s = chat_bridge.normalize(raw, _cfg())
+    c = s["bible"]["characters"][0]
+    assert c["id"] == "char1" and c["age"] == 29 and c["look_en"] == ""
+    cut = s["episodes"][0]["cuts"][0]
+    assert cut["seconds"] == 5 and cut["dialogue"] == [{"speaker": "소담", "line": "안녕"}] and cut["subtitle"] == "안녕"
+    assert cut["transition"] == "cut" and s["episodes"][0]["thumbnail_text"] == "첫 줄\n둘째 줄"
+
+
+def test_import_new_series_then_next_episode_from_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "OUTPUT_DIR", tmp_path / "output")
+    first = copy.deepcopy(chat_bridge.EXAMPLE)
+    f1 = tmp_path / "answer1.txt"
+    f1.write_text("답변입니다\n```json\n" + json.dumps(first, ensure_ascii=False) + "\n```", encoding="utf-8")
+    assert main.main(["import", "--file", str(f1)]) == 0
+    out = next((tmp_path / "output").iterdir())
+    assert (out / "04_뉴테이크_프롬프트_EP01.txt").exists() and (out / "07_업로드문구_EP01.txt").exists()
+    nxt = {"episodes": [dict(copy.deepcopy(first["episodes"][0]), no=2, title="둘째 날")]}
+    f2 = tmp_path / "answer2.txt"
+    f2.write_text(json.dumps(nxt, ensure_ascii=False), encoding="utf-8")
+    assert main.main(["import", "--file", str(f2)]) == 0           # 최근 시리즈에 2화 붙이기
+    series = json.loads((out / "series.json").read_text(encoding="utf-8"))
+    assert [e["no"] for e in series["episodes"]] == [1, 2] and (out / "02_대본_EP02.md").exists()
+    assert main.main(["edit", "--no-tts", "--episode", "2"]) == 0    # 폴더를 안 써도 최근 폴더 편집
+    assert (out / "05_완성_EP02.mp4").exists()
+
+
+def test_bat_files_call_existing_commands():
+    root = Path(__file__).resolve().parent.parent
+    text = "".join(f.read_text(encoding="utf-8") for f in root.glob("[123]_*.bat"))
+    for cmd in ("main.py chat-prompt", "main.py import", "main.py edit"):
+        assert cmd in text

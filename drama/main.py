@@ -2,6 +2,8 @@
 
 사용법
   python main.py --idea "비 오는 날 우산 하나로 엮인 꽃집 사장과 건축가" --episodes 3 --seconds 60
+  python main.py chat-prompt                         # Claude 대화창용 요청문 복사 (API 키 불필요)
+  python main.py import                              # 대화창 답변(복사한 것) 가져오기
   python main.py sample                              # API 키 없이 결과물 미리보기
   python main.py export output/2026-11-18_우산은_하나뿐   # series.json 을 고친 뒤 다시 내보내기
   python main.py edit   output/2026-11-18_우산은_하나뿐   # 컷 영상·음성·자막 → 완성 영상 자동 편집
@@ -77,9 +79,74 @@ def cmd_export(args) -> int:
     return 0
 
 
+def latest_folder() -> Path | None:
+    """샘플을 뺀 가장 최근 결과 폴더."""
+    if not settings.OUTPUT_DIR.exists():
+        return None
+    dirs = [d for d in settings.OUTPUT_DIR.iterdir()
+            if d.is_dir() and "샘플" not in d.name and (d / "series.json").exists()]
+    return max(dirs, key=lambda d: d.stat().st_mtime) if dirs else None
+
+
+def cmd_chat_prompt(args) -> int:
+    from dramamaker import chat_bridge
+    cfg = settings.load_config(Path(args.config) if args.config else None, {
+        "idea": args.idea, "genre": args.genre, "episodes": args.episodes, "seconds": args.seconds})
+    text = chat_bridge.build_prompt(cfg, cfg["idea"])
+    settings.OUTPUT_DIR.mkdir(exist_ok=True)
+    f = settings.OUTPUT_DIR / "대화창_요청문.txt"
+    f.write_text(text, encoding="utf-8")
+    copied = chat_bridge.write_clipboard(text)
+    print("✅ 요청문이 " + ("복사됐어요! (Ctrl+V 로 붙여넣기)" if copied else f"만들어졌어요: {f}"))
+    print("  1) claude.ai 대화창을 열고 붙여넣기 하세요.")
+    if not cfg["idea"]:
+        print("  2) 맨 위 '■ 아이디어:' 줄에 아이디어를 적고 보내세요.")
+    else:
+        print("  2) 그대로 보내세요.")
+    print("  3) 답변의 코드블록 오른쪽 위 '복사' 버튼을 누른 뒤, 2_대본_가져오기.bat 을 실행하세요.")
+    return 0
+
+
+def cmd_import(args) -> int:
+    from dramamaker import chat_bridge
+    try:
+        text = Path(args.file).read_text(encoding="utf-8-sig") if args.file else chat_bridge.read_clipboard()
+        data = chat_bridge.extract_json(text)
+        cfg = settings.load_config(Path(args.config) if args.config else None)
+        new = chat_bridge.normalize(data, cfg)
+    except FileNotFoundError:
+        print(f"❌ 파일을 찾지 못했어요: {args.file}")
+        return 1
+    except chat_bridge.ImportError_ as e:
+        print(f"❌ {e}")
+        return 1
+    if "bible" in new:                                   # 새 시리즈
+        series = {"bible": new["bible"], "episodes": new["episodes"]}
+        series["config"] = {k: cfg[k] for k in ("idea", "genre", "episodes", "seconds", "aspect",
+                                                 "cut_min", "cut_max", "visual_style")}
+        out = settings.new_output_dir(series["bible"]["title"])
+        print(f"▶ 새 시리즈: {series['bible']['title']}  ({len(series['episodes'])}회)")
+    else:                                                # '다음 화' 답변 → 최근 시리즈에 붙이기
+        out = Path(args.folder) if args.folder else latest_folder()
+        if not out or not (out / "series.json").exists():
+            print("❌ 이 답변은 '다음 화'만 들어 있는데, 붙일 시리즈 폴더가 없어요. 1화부터 가져와 주세요.")
+            return 1
+        series = json.loads((out / "series.json").read_text(encoding="utf-8"))
+        cfg = settings.load_config(Path(args.config) if args.config else None, series.get("config"))
+        added = chat_bridge.merge_episodes(series, new["episodes"])
+        print(f"▶ '{series['bible']['title']}' 에 EP{', EP'.join(f'{n:02d}' for n in added)} 추가")
+    _finish(out, series, cfg)
+    return 0
+
+
 def cmd_edit(args) -> int:
     from dramamaker import edit
-    out = Path(args.folder)
+    out = Path(args.folder) if args.folder else latest_folder()
+    if out is None:
+        print("❌ 편집할 결과 폴더가 없어요. 먼저 대본을 만들거나 가져와 주세요.")
+        return 1
+    if not args.folder:
+        print(f"▶ 가장 최근 결과 폴더를 편집해요: {out.name}")
     src = out / "series.json"
     if not src.exists():
         print(f"❌ {out} 안에 series.json 이 없어요. 폴더 경로를 확인해 주세요.")
@@ -106,11 +173,25 @@ def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] == "edit":
         p = argparse.ArgumentParser(prog="main.py edit", description="컷 영상 + 음성 + 자막 → 완성 영상")
-        p.add_argument("folder", help="output 안의 결과 폴더")
+        p.add_argument("folder", nargs="?", help="output 안의 결과 폴더 (안 쓰면 가장 최근 폴더)")
         p.add_argument("--episode", type=int, help="이 회차만 편집 (안 쓰면 전체)")
         p.add_argument("--no-tts", action="store_true", help="자동 음성(TTS) 끄기 (자막·원래 소리는 유지)")
         p.add_argument("--config", help="다른 설정 파일을 쓸 때")
         return cmd_edit(p.parse_args(argv[1:]))
+    if argv and argv[0] == "chat-prompt":
+        p = argparse.ArgumentParser(prog="main.py chat-prompt", description="Claude 대화창용 요청문 만들기(복사)")
+        p.add_argument("--idea", help="한 줄 아이디어 (안 쓰면 대화창에서 직접 적기)")
+        p.add_argument("--genre", help="장르")
+        p.add_argument("--episodes", type=int, help="회차 수")
+        p.add_argument("--seconds", type=int, help="회당 길이(초)")
+        p.add_argument("--config", help="다른 설정 파일을 쓸 때")
+        return cmd_chat_prompt(p.parse_args(argv[1:]))
+    if argv and argv[0] == "import":
+        p = argparse.ArgumentParser(prog="main.py import", description="Claude 대화창 답변 가져오기")
+        p.add_argument("--file", help="답변을 저장한 텍스트 파일 (안 쓰면 클립보드에서 읽음)")
+        p.add_argument("--folder", help="'다음 화'를 붙일 결과 폴더 (안 쓰면 가장 최근 폴더)")
+        p.add_argument("--config", help="다른 설정 파일을 쓸 때")
+        return cmd_import(p.parse_args(argv[1:]))
     if argv and argv[0] == "upload-text":
         p = argparse.ArgumentParser(prog="main.py upload-text", description="업로드 제목·설명·해시태그 만들기")
         p.add_argument("folder", help="output 안의 결과 폴더")
