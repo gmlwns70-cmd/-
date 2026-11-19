@@ -1,11 +1,14 @@
-# ===== 필수 패키지 =====
-pillow>=10.0          # 카드 이미지 합성
-numpy>=1.26           # 종이 질감 노이즈 생성
-pyyaml>=6.0           # config.yaml 읽기
-python-dotenv>=1.0    # .env(API 키) 읽기
-requests>=2.31        # 폰트 자동 다운로드
-anthropic>=1.0        # 원고 생성 (Claude API)
+# NOTE: keep this file ASCII-only. pip on Korean Windows reads it as cp949,
+# so Korean comments here break "pip install -r requirements.txt".
 
-# ===== 일러스트 생성 (둘 중 쓰는 것만 있어도 됩니다) =====
-openai>=1.50          # IMAGE_PROVIDER=openai 일 때
-google-genai>=1.0     # IMAGE_PROVIDER=gemini 일 때
+# ===== Required =====
+pillow>=10.0          # card image composition
+numpy>=1.26           # paper texture noise
+pyyaml>=6.0           # reads config.yaml
+python-dotenv>=1.0    # reads .env (API keys)
+requests>=2.31        # font auto-download
+anthropic>=1.0        # script writing (Claude API)
+
+# ===== Illustrations (only the one you use is needed) =====
+openai>=1.50          # when IMAGE_PROVIDER=openai
+google-genai>=1.0     # when IMAGE_PROVIDER=gemini

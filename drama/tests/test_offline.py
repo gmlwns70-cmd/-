@@ -340,3 +340,11 @@ def test_upload_text_command_and_fake_regen(tmp_path, monkeypatch):
     up = generate.make_upload(_cfg(), series, series["episodes"][0], client=fake)
     assert up["titles"] == ["새 제목"] and fake.calls[0]["output_config"]["format"]["schema"] is generate.UPLOAD
     assert "그 우산, 제 건데요." in fake.calls[0]["messages"][0]["content"]
+
+
+def test_requirements_files_readable_on_korean_windows():
+    """한국어 윈도우의 pip 는 requirements.txt 를 cp949 로 읽습니다. 한글이 있으면 설치가 깨집니다."""
+    root = Path(__file__).resolve().parents[2]
+    for f in (root / "requirements.txt", root / "cardnews" / "requirements.txt",
+              root / "drama" / "requirements.txt"):
+        f.read_bytes().decode("ascii")

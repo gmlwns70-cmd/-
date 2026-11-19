@@ -1,4 +1,7 @@
-# ===== 필수 패키지 =====
+# NOTE: keep this file ASCII-only. pip on Korean Windows reads it as cp949,
+# so Korean comments here break "pip install -r requirements.txt".
+
+# ===== Required =====
 streamlit>=1.50
 python-dotenv>=1.0
 pyyaml>=6.0
@@ -13,9 +16,9 @@ numpy>=1.26
 mutagen>=1.47
 proglog>=0.1.10
 
-# ===== 선택 패키지 (자막 정밀 정렬을 원할 때만) =====
-# 아래 줄 맨 앞의 # 을 지우고 다시 설치하면 사용 가능합니다.
+# ===== Optional: precise subtitle alignment =====
+# Remove the leading # below and reinstall to enable it.
 # faster-whisper>=1.0
 
-# ===== 개발/테스트용 =====
+# ===== Development / tests =====
 pytest>=8.0

@@ -1,13 +1,16 @@
-# ===== 필수 패키지 =====
-anthropic>=1.0        # 대본 생성 (Claude API)
-pyyaml>=6.0           # config.yaml 읽기
-python-dotenv>=1.0    # .env(API 키) 읽기
+# NOTE: keep this file ASCII-only. pip on Korean Windows reads it as cp949,
+# so Korean comments here break "pip install -r requirements.txt".
 
-# ===== 자동 편집 =====
-pillow>=10.0          # 자막·대기 화면 이미지
-edge-tts>=7.0         # 무료 대사 음성(TTS)
-imageio-ffmpeg>=0.5   # 영상 합치기 (ffmpeg 내장)
-requests>=2.31        # 한글 폰트 자동 다운로드
+# ===== Required =====
+anthropic>=1.0        # script writing (Claude API)
+pyyaml>=6.0           # reads config.yaml
+python-dotenv>=1.0    # reads .env (API key)
 
-# ===== 테스트용 =====
+# ===== Auto editing =====
+pillow>=10.0          # subtitles, placeholder screens, thumbnails
+edge-tts>=7.0         # free dialogue voice (TTS)
+imageio-ffmpeg>=0.5   # video joining (bundled ffmpeg)
+requests>=2.31        # Korean font auto-download
+
+# ===== Tests =====
 pytest>=8.0
