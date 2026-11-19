@@ -340,3 +340,83 @@ def test_upload_text_command_and_fake_regen(tmp_path, monkeypatch):
     up = generate.make_upload(_cfg(), series, series["episodes"][0], client=fake)
     assert up["titles"] == ["새 제목"] and fake.calls[0]["output_config"]["format"]["schema"] is generate.UPLOAD
     assert "그 우산, 제 건데요." in fake.calls[0]["messages"][0]["content"]
+
+
+def test_requirements_files_readable_on_korean_windows():
+    """한국어 윈도우의 pip 는 requirements.txt 를 cp949 로 읽습니다. 한글이 있으면 설치가 깨집니다."""
+    root = Path(__file__).resolve().parents[2]
+    for f in (root / "requirements.txt", root / "cardnews" / "requirements.txt",
+              root / "drama" / "requirements.txt"):
+        f.read_bytes().decode("ascii")
+
+
+# ── 목소리 자동 대체 ───────────────────────────────────
+def test_voice_engine_falls_back_to_windows_and_keeps_it(tmp_path, monkeypatch):
+    calls = []
+
+    def edge_blocked(text, voice, out):
+        calls.append("edge")
+        out.write_bytes(b"")
+        raise OSError("[WinError 64] 지정된 네트워크 이름을 더 이상 사용할 수 없습니다")
+
+    def windows_ok(text, voice, out):
+        calls.append("windows")
+        _tone(text, voice, out)
+
+    monkeypatch.setattr(edit, "edge_tts_synth", edge_blocked)
+    monkeypatch.setattr(edit, "windows_tts_synth", windows_ok)
+    monkeypatch.setattr(edit.VoiceEngine, "ENGINES", {"edge": edge_blocked, "windows": windows_ok})
+    monkeypatch.setattr(edit.VoiceEngine, "WAIT", 0)
+    series = copy.deepcopy(SAMPLE)
+    series["episodes"][0]["cuts"] = series["episodes"][0]["cuts"][1:4]   # 대사 있는 컷 3개
+    logs = []
+    edit.edit_episode(tmp_path, series, 1, _cfg(), tts=True, log=logs.append)
+    assert calls == ["edge"] * edit.VoiceEngine.RETRIES + ["windows"] * 3   # 몇 번 재시도 후 윈도우로, 이후엔 바로 윈도우
+    assert any("윈도우 기본 한국어 목소리로 만들어요" in l for l in logs)
+    assert "음성 3/3컷 (윈도우 기본 목소리)" in logs[-1]
+    mp3s = sorted((tmp_path / "_편집작업" / "EP01").glob("*.mp3"))
+    assert len(mp3s) == 3 and all(m.stat().st_size > 0 for m in mp3s)
+    srt = (tmp_path / "05_자막_EP01.srt").read_text(encoding="utf-8")
+    assert "확실해요?" in srt
+
+
+def test_voice_engine_modes_and_windows_guard(tmp_path):
+    assert edit.VoiceEngine("windows").name == "windows" and edit.VoiceEngine("edge").name == "edge"
+    assert [n for n, _ in edit.VoiceEngine("auto").order] == ["edge", "windows"]
+    assert edit.is_male_voice({"voice": edit.MALE}) and not edit.is_male_voice({"voice": edit.FEMALE})
+    import sys
+    if sys.platform != "win32":
+        try:
+            edit.windows_tts_synth("안녕", {"voice": edit.FEMALE}, tmp_path / "a.mp3")
+            assert False, "윈도우가 아니면 안내 오류가 나야 함"
+        except edit.EditError as e:
+            assert "윈도우" in str(e)
+
+
+def test_flaky_internet_voice_recovers_with_retry(tmp_path, monkeypatch):
+    """사용자 PC 처럼 연결이 가끔 끊길 때: 재시도로 살아나면 윈도우 목소리로 바꾸지 않음."""
+    state = {"n": 0}
+
+    def edge_flaky(text, voice, out):
+        state["n"] += 1
+        if state["n"] % 2 == 0:                     # 두 번에 한 번 끊김
+            raise OSError("connection reset")
+        _tone(text, voice, out)
+
+    def windows_never(text, voice, out):
+        raise AssertionError("윈도우 목소리로 바뀌면 안 됨")
+
+    monkeypatch.setattr(edit.VoiceEngine, "ENGINES", {"edge": edge_flaky, "windows": windows_never})
+    monkeypatch.setattr(edit.VoiceEngine, "WAIT", 0)
+    series = copy.deepcopy(SAMPLE)
+    series["episodes"][0]["cuts"] = series["episodes"][0]["cuts"][1:4]
+    logs = []
+    edit.edit_episode(tmp_path, series, 1, _cfg(), tts=True, log=logs.append)
+    assert "음성 3/3컷" in logs[-1] and "윈도우" not in logs[-1]
+
+
+def test_voice_summary_is_honest():
+    assert edit._voice_summary(2, 5, {"edge"}) == " / 음성 2/5컷"
+    assert edit._voice_summary(0, 5, set()) == " / 음성 없음(자막만)"
+    assert "섞임" in edit._voice_summary(5, 5, {"edge", "windows"})
+    assert edit._voice_summary(0, 0, set()) == " / 대사 없음"

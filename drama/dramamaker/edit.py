@@ -121,6 +121,100 @@ def edge_tts_synth(text: str, voice: dict, out: Path) -> None:
     asyncio.run(_go())
 
 
+WINDOWS_TTS_PS1 = r"""
+param([string]$TextFile, [string]$WavFile, [string]$Pitch, [string]$Rate)
+Add-Type -AssemblyName System.Speech
+$s = New-Object System.Speech.Synthesis.SpeechSynthesizer
+$v = $s.GetInstalledVoices() | ForEach-Object { $_.VoiceInfo } | Where-Object { $_.Culture.Name -eq 'ko-KR' } | Select-Object -First 1
+if (-not $v) { exit 3 }
+$s.SelectVoice($v.Name)
+$s.Rate = [int]$Rate
+$t = [IO.File]::ReadAllText($TextFile, [Text.Encoding]::UTF8)
+$e = [Security.SecurityElement]::Escape($t)
+$ssml = "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='ko-KR'><prosody pitch='$Pitch'>$e</prosody></speak>"
+$s.SetOutputToWaveFile($WavFile)
+$s.SpeakSsml($ssml)
+$s.Dispose()
+"""
+
+
+def is_male_voice(voice: dict) -> bool:
+    return any(k in voice.get("voice", "") for k in ("InJoon", "Hyunsu", "Male"))
+
+
+def windows_tts_synth(text: str, voice: dict, out: Path) -> None:
+    """윈도우에 기본으로 들어 있는 한국어 목소리(인터넷 불필요). 남자 인물은 목소리를 낮춥니다."""
+    import sys
+    if sys.platform != "win32":
+        raise EditError("윈도우 기본 목소리는 윈도우에서만 쓸 수 있어요.")
+    tmp = out.with_suffix("")
+    ps1, txt, wav = tmp.with_name(tmp.name + ".ps1"), tmp.with_name(tmp.name + ".txt"), tmp.with_name(tmp.name + ".wav")
+    ps1.write_text(WINDOWS_TTS_PS1, encoding="utf-8-sig")
+    txt.write_text(text, encoding="utf-8")
+    pitch = "low" if is_male_voice(voice) else "medium"
+    rate = "1" if voice.get("rate", "+0%").startswith("+") and voice.get("rate") != "+0%" else "0"
+    try:
+        p = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ps1),
+                            str(txt), str(wav), pitch, rate], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=120)
+        if p.returncode == 3:
+            raise EditError("윈도우에 한국어 음성이 없어요. 설정 → 시간 및 언어 → 언어 및 지역 → 한국어 → "
+                            "언어 옵션 → '음성' 을 설치해 주세요.")
+        if p.returncode != 0 or not wav.exists():
+            raise RuntimeError((p.stderr or p.stdout or "PowerShell 오류").strip().splitlines()[-1][:200])
+        _run(["-i", str(wav), "-ar", "44100", "-ac", "2", "-b:a", "160k", str(out)])
+    finally:
+        for f in (ps1, txt, wav):
+            f.unlink(missing_ok=True)
+
+
+class VoiceEngine:
+    """mode: auto(인터넷 무료 목소리 → 막히면 윈도우 목소리) / edge / windows"""
+    ENGINES = {"edge": edge_tts_synth, "windows": windows_tts_synth}
+
+    def __init__(self, mode: str = "auto", log=print, synth=None):
+        mode = (mode or "auto").lower()
+        if synth is not None:                       # 테스트 등에서 직접 넣은 엔진
+            self.order = [("custom", synth)]
+        elif mode in self.ENGINES:
+            self.order = [(mode, self.ENGINES[mode])]
+        else:
+            self.order = [("edge", self.ENGINES["edge"]), ("windows", self.ENGINES["windows"])]
+        self.log = log
+
+    @property
+    def name(self) -> str:
+        return self.order[0][0]
+
+    RETRIES = 3          # 인터넷 목소리는 연결이 가끔 끊기므로 몇 번 다시 시도
+    WAIT = 2.0           # 다시 시도 전 기다리는 시간(초), 시도할수록 늘어남
+
+    def __call__(self, text: str, voice: dict, out: Path) -> str:
+        """음성을 만들고, 실제로 쓴 엔진 이름을 돌려줍니다."""
+        import time
+        while True:
+            name, fn = self.order[0]
+            tries = self.RETRIES if name == "edge" else 1
+            for attempt in range(1, tries + 1):
+                try:
+                    fn(text, voice, out)
+                    return name
+                except EditError:
+                    raise
+                except Exception as e:
+                    out.unlink(missing_ok=True)
+                    err = e
+                    if attempt < tries:
+                        time.sleep(self.WAIT * attempt)
+            if len(self.order) == 1:
+                raise err
+            detail = str(err).strip().splitlines()[0][:160] if str(err).strip() else ""
+            self.log(f"  ⚠ 인터넷 무료 목소리가 {tries}번 연속 끊겼어요 ({type(err).__name__}: {detail})\n"
+                     "     → 남은 대사는 윈도우 기본 한국어 목소리로 만들어요. 나중에 edit 를 다시 실행하면\n"
+                     "       그 대사들도 인터넷 목소리로 다시 시도해요(이미 된 대사는 그대로 둠).")
+            self.order.pop(0)
+
+
 # ── 화면 재료 ───────────────────────────────────────────
 def _wrap(text: str, width: int = 14) -> list[str]:
     lines = []
@@ -327,13 +421,28 @@ def duck_volume_expr(spans: list[tuple[float, float]], duck: float, ramp: float 
 
 
 # ── 회차 전체 ───────────────────────────────────────────
+def _voice_summary(voiced: int, need: int, engines: set) -> str:
+    """대사가 있는 컷 중 몇 컷에 목소리가 들어갔는지 정확히 알려줍니다."""
+    if need == 0:
+        return " / 대사 없음"
+    how = " (윈도우 기본 목소리 섞임)" if "windows" in engines and len(engines) > 1 else \
+          " (윈도우 기본 목소리)" if engines == {"windows"} else ""
+    if voiced == 0:
+        return " / 음성 없음(자막만)"
+    return f" / 음성 {voiced}/{need}컷{how}"
+
+
+def _voice_key(line: str, voice: dict, engine: str) -> str:
+    return hashlib.md5(f"{line}|{voice}|{engine}".encode()).hexdigest()[:10]
+
+
 def _srt_time(t: float) -> str:
     ms = int(round(t * 1000))
     return f"{ms // 3600000:02d}:{ms // 60000 % 60:02d}:{ms // 1000 % 60:02d},{ms % 1000:03d}"
 
 
 def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool = True,
-                 synth=edge_tts_synth, log=print) -> Path:
+                 synth=None, log=print) -> Path:
     ep = next((e for e in series["episodes"] if e["no"] == ep_no), None)
     if not ep:
         raise EditError(f"EP{ep_no:02d} 가 series.json 에 없어요.")
@@ -351,11 +460,13 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
     colors = subtitle_style.char_colors(series["bible"], cfg.get("edit", {}).get("subtitle_colors"))
     names = {c["id"]: c["name"] for c in series["bible"]["characters"]}
     ecfg = cfg.get("edit", {})
+    engine = VoiceEngine(str(ecfg.get("tts", "auto")), log, synth)
 
     trans = plan_transitions(ep["cuts"], str(ecfg.get("transition", "auto")))
     pads = [TRANSITIONS[t][1] for t in trans] + [0.0]
     segs, lengths, srt, t0 = [], [], [], 0.0
     counts = {"video": 0, "image": 0, "placeholder": 0, "clip_audio": 0}
+    voiced, used_engines = 0, set()
     for idx, cut in enumerate(ep["cuts"]):
         stem = f"cut{cut['no']:02d}"
         src, kind = _find(clip_dir, stem, VIDEO_EXT), "video"
@@ -374,22 +485,30 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
             try:
                 for i, d in enumerate(cut["dialogue"]):
                     v = voices.get(d["speaker"], {"voice": FEMALE, "pitch": "+0Hz", "rate": "+0%"})
-                    key = hashlib.md5(f"{d['line']}|{v}".encode()).hexdigest()[:10]
-                    mp3 = work / f"{stem}_{i + 1}_{key}.mp3"
+                    mp3 = work / f"{stem}_{i + 1}_{_voice_key(d['line'], v, engine.name)}.mp3"
                     if not mp3.exists() or mp3.stat().st_size == 0:   # 빈 파일 = 지난번 실패 → 다시 생성
                         try:
-                            synth(d["line"], v, mp3)
+                            used = engine(d["line"], v, mp3)
+                            used_engines.add(used)
                         except BaseException:
                             mp3.unlink(missing_ok=True)
                             raise
+                        real = work / f"{stem}_{i + 1}_{_voice_key(d['line'], v, used)}.mp3"
+                        if real != mp3:                                # 도중에 엔진이 바뀐 경우 이름 정리
+                            mp3.replace(real)
+                            mp3 = real
                     voice_files.append((mp3, media_duration(mp3)))
             except EditError:
                 raise
             except Exception as e:  # 인터넷이 없거나 TTS 서버 문제
-                log(f"  ⚠ 음성(TTS) 생성 실패 → 이번 편집은 자막만 넣어요. 인터넷 연결을 확인하세요. ({type(e).__name__})")
+                detail = str(e).strip().splitlines()[0][:200] if str(e).strip() else ""
+                log(f"  ⚠ 음성(TTS) 생성 실패 → 이번 편집은 자막만 넣어요. ({type(e).__name__}: {detail})\n"
+                    "     · 인터넷 연결, 백신·보안 프로그램이 speech.platform.bing.com 접속을 막는지 확인하세요.\n"
+                    "     · 대신 뉴테이크 '오디오 생성' 등으로 만든 음성을 clips/EP01/cut01_voice.mp3 처럼 넣어도 돼요.")
                 tts, voice_files = False, []
 
         lead = max(LEAD, pads[idx - 1] + 0.1) if idx > 0 and pads[idx - 1] > 0 else LEAD  # 전환이 끝난 뒤 대사 시작
+        voiced += bool(voice_files)
         length, events = plan_cut(cut, voice_files, single, lead)
         length = math.ceil(length * FPS - 1e-6) / FPS             # 프레임 단위로 맞춤
         subs = []
@@ -435,5 +554,5 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
     log(f"  · 영상 {counts['video']}컷 / 이미지 {counts['image']}컷 / 대기 화면 {counts['placeholder']}컷"
         + f" / 원본 소리 {counts['clip_audio']}컷"
         + f" / 전환 효과 {sum(t != 'cut' for t in trans)}곳"
-        + (" / 배경음악 O" if bgm else " / 배경음악 없음") + (" / 음성 O" if tts else " / 음성 없음(자막만)"))
+        + (" / 배경음악 O" if bgm else " / 배경음악 없음") + _voice_summary(voiced, sum(bool(c["dialogue"]) for c in ep["cuts"]), used_engines))
     return final
