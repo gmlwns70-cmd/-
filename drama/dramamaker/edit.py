@@ -240,11 +240,35 @@ def placeholder_png(cut: dict, ep_title: str, font_path: Path, out: Path) -> Non
 
 
 def _find(folder: Path, stem: str, exts: tuple) -> Path | None:
-    for ext in exts:
+    """folder 안에서 stem 이름의 파일을 찾습니다. 사람이 저장한 이름은 조금씩 달라서 너그럽게 찾습니다.
+    예) cut01.png / CUT01.PNG / cut1.jpg / cut01.png.webp(확장자 숨김 상태에서 이름 바꿈) / cut01 (1).webp
+    단, cut1 이 cut10 과 헷갈리지 않게 하고, 'cut01' 을 찾을 때 'cut01_voice' 는 고르지 않습니다."""
+    for ext in exts:                                        # 1) 정확히 같은 이름
         for name in (stem + ext, stem + ext.upper()):
             if (folder / name).exists():
                 return folder / name
-    return None
+    if not folder.exists():
+        return None
+    m = re.fullmatch(r"([a-z]+)(\d+)(.*)", stem.lower())   # cut01 → cut, 01, ''   cut01_voice → cut, 01, _voice
+    if m:
+        head, num, tail = m.group(1), int(m.group(2)), re.escape(m.group(3))
+        pat = re.compile(rf"{head}0*{num}(?!\d){tail}")
+    else:
+        pat = re.compile(re.escape(stem.lower()))
+    hits = []
+    for f in sorted(folder.iterdir()):
+        name = f.name.lower()
+        if not f.is_file() or not name.endswith(tuple(e.lower() for e in exts)):
+            continue
+        mm = pat.match(name)
+        if not mm:
+            continue
+        rest = name[mm.end():]
+        if not m or not m.group(3):                         # 'cut01' 찾는데 'cut01_voice.mp3' 는 제외
+            if rest.startswith("_"):
+                continue
+        hits.append(f)
+    return hits[0] if hits else None
 
 
 # ── 컷 하나 만들기 ──────────────────────────────────────

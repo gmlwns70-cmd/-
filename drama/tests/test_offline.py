@@ -512,3 +512,20 @@ def test_image_prompt_starts_with_scene_not_portrait():
     assert vid.startswith("Characters —") and "studio portrait" not in vid
     no_char = dict(cut, characters=[])
     assert not export.full_prompt(no_char, SAMPLE["bible"], _cfg(), "image").startswith("Same person")
+
+
+def test_find_is_forgiving_about_file_names(tmp_path):
+    """실제 사용: 확장자가 숨겨진 탐색기에서 'cut01.png' 로 이름을 바꾸면 실제로는 'cut01.png.webp' 가 된다."""
+    for n in ("cut01.png.webp", "CUT02.JPG", "cut3.jpg", "cut10.png", "cut04 (1).webp",
+              "cut05_voice.mp3", "cut05.mp4", "note.txt"):
+        (tmp_path / n).write_bytes(b"x")
+    f = lambda stem, exts=edit.IMAGE_EXT: edit._find(tmp_path, stem, exts)  # noqa: E731
+    assert f("cut01").name == "cut01.png.webp"
+    assert f("cut02").name == "CUT02.JPG"
+    assert f("cut03").name == "cut3.jpg"
+    assert f("cut01") is not None and f("cut10").name == "cut10.png"
+    assert f("cut04").name == "cut04 (1).webp"
+    assert f("cut11") is None                                    # cut1 이 cut11 로, cut10 이 cut1 로 헷갈리지 않게
+    assert edit._find(tmp_path, "cut05", edit.AUDIO_EXT) is None  # 영상 찾을 때 음성 파일은 안 고름
+    assert edit._find(tmp_path, "cut05_voice", edit.AUDIO_EXT).name == "cut05_voice.mp3"
+    assert edit._find(tmp_path, "cut05", edit.VIDEO_EXT).name == "cut05.mp4"
