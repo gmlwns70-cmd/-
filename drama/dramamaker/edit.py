@@ -386,7 +386,10 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
             except EditError:
                 raise
             except Exception as e:  # 인터넷이 없거나 TTS 서버 문제
-                log(f"  ⚠ 음성(TTS) 생성 실패 → 이번 편집은 자막만 넣어요. 인터넷 연결을 확인하세요. ({type(e).__name__})")
+                detail = str(e).strip().splitlines()[0][:200] if str(e).strip() else ""
+                log(f"  ⚠ 음성(TTS) 생성 실패 → 이번 편집은 자막만 넣어요. ({type(e).__name__}: {detail})\n"
+                    "     · 인터넷 연결, 백신·방화벽, 회사망/VPN 이 speech.platform.bing.com 접속을 막는지 확인하세요.\n"
+                    "     · 대신 뉴테이크 '오디오 생성' 등으로 만든 음성을 clips/EP01/cut01_voice.mp3 처럼 넣어도 돼요.")
                 tts, voice_files = False, []
 
         lead = max(LEAD, pads[idx - 1] + 0.1) if idx > 0 and pads[idx - 1] > 0 else LEAD  # 전환이 끝난 뒤 대사 시작
