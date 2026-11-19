@@ -38,8 +38,13 @@ def full_prompt(cut: dict, bible: dict, cfg: dict, kind: str = "video") -> str:
     if kind == "image":
         # 실제 뉴테이크 테스트: 외모 설명이 맨 앞이면 참조 사진을 그대로 베낀 '증명사진'이 나왔다.
         # 장면을 먼저 쓰고, 외모는 참조 사진과 같다고 짧게 밝힌 뒤 뒤쪽에 둔다.
-        if looks:
+        if len(looks) == 1:
             parts.append("Same person as in the reference image (same face, hair and outfit). New scene:")
+        elif looks:
+            ids = [cid for cid in cut["characters"] if cid in chars]
+            order = ", ".join(f"reference image {i} is {cid}" for i, cid in enumerate(ids, 1))
+            parts.append(f"Same people as in the reference images ({order}; keep each face, hair and outfit). "
+                         "New scene:")
         parts.append(_sentence(body))
         if looks:
             parts.append("Appearance — " + " | ".join(looks) + ".")
@@ -125,8 +130,10 @@ def write_paste(path: Path, ep: dict, bible: dict, cfg: dict) -> None:
            "   그 컷에 나오는 인물의 기준 얼굴 사진을 '캔버스 참조'로 연결하세요. (안내 줄은 붙여넣지 마세요)",
            "② 만든 이미지로 '영상 생성'을 하고 [영상 프롬프트] 를 붙여넣은 뒤, 길이를 '초'에 맞추세요.", ""]
     for c in ep["cuts"]:
+        refs = " + ".join(f"{i}번 {char_map(bible)[cid]['name']}" for i, cid in
+                          enumerate([x for x in c["characters"] if x in char_map(bible)], 1)) or "없음"
         out += ["=" * 60,
-                f"컷 {c['no']}  |  {c['seconds']}초  |  인물: {', '.join(c['characters']) or '-'}",
+                f"컷 {c['no']}  |  {c['seconds']}초  |  인물: {', '.join(c['characters']) or '-'}  |  참조 사진: {refs}",
                 f"대사: {_dialogue_text(c, bible) or '(없음)'}",
                 "", "[시작 이미지 프롬프트]", full_prompt(c, bible, cfg, "image"),
                 "", "[영상 프롬프트]", full_prompt(c, bible, cfg, "video"), ""]

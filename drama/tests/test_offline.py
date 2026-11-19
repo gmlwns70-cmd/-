@@ -529,3 +529,14 @@ def test_find_is_forgiving_about_file_names(tmp_path):
     assert edit._find(tmp_path, "cut05", edit.AUDIO_EXT) is None  # 영상 찾을 때 음성 파일은 안 고름
     assert edit._find(tmp_path, "cut05_voice", edit.AUDIO_EXT).name == "cut05_voice.mp3"
     assert edit._find(tmp_path, "cut05", edit.VIDEO_EXT).name == "cut05.mp4"
+
+
+def test_two_person_cut_names_reference_order(tmp_path):
+    cut = SAMPLE["episodes"][0]["cuts"][0]                       # haeun + dojun
+    img = export.full_prompt(cut, SAMPLE["bible"], _cfg(), "image")
+    assert img.startswith("Same people as in the reference images (reference image 1 is haeun, "
+                          "reference image 2 is dojun")
+    p = tmp_path / "paste.txt"
+    export.write_paste(p, SAMPLE["episodes"][0], SAMPLE["bible"], _cfg())
+    assert "참조 사진: 1번 한하은 + 2번 강도준" in p.read_text(encoding="utf-8")
+    assert "참조 사진: 없음" in p.read_text(encoding="utf-8")   # 인물 없는 인서트 컷
