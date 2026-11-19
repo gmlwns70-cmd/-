@@ -479,3 +479,11 @@ def test_bat_files_call_existing_commands():
     text = "".join(f.read_text(encoding="utf-8") for f in root.glob("[123]_*.bat"))
     for cmd in ("main.py chat-prompt", "main.py import", "main.py edit"):
         assert cmd in text
+
+
+def test_character_portrait_prompt_forbids_text(tmp_path):
+    """실제 뉴테이크(Seedream)에서 인물 사진 구석에 한글 소개 글이 찍혀 나온 문제 재발 방지."""
+    p = tmp_path / "chars.md"
+    export.write_characters(p, SAMPLE["bible"], _cfg())
+    text = p.read_text(encoding="utf-8")
+    assert text.count("No text, no letters, no captions, no logo, no watermark.") == len(SAMPLE["bible"]["characters"])

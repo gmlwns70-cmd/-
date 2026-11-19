@@ -40,7 +40,8 @@ def write_characters(path: Path, bible: dict, cfg: dict) -> None:
              "그래야 회차가 바뀌어도 같은 얼굴이 나옵니다.", ""]
     for c in bible["characters"]:
         portrait = (f"Character reference portrait of {c['look_en']} Front-facing, neutral expression, "
-                    f"plain light grey background, upper body. Style: {cfg['visual_style']}.")
+                    f"plain light grey background, upper body. Style: {cfg['visual_style']}. "
+                    "No text, no letters, no captions, no logo, no watermark.")
         lines += [f"## {c['name']} (`{c['id']}`) — {c['role']}, {c['age']}세",
                   f"- 성격: {c['personality']}",
                   f"- 외모: {c['look_ko']}",
