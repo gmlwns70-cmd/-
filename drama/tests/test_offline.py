@@ -500,3 +500,15 @@ def test_full_prompt_drops_korean_fields_and_double_periods():
     assert "Shot: medium close-up." in p and "Setting" not in p and "Mood" not in p
     p2 = export.full_prompt(SAMPLE["episodes"][0]["cuts"][1], SAMPLE["bible"], _cfg(), "video")
     assert "Setting: bus stop, rainy evening." in p2 and "camera: static" in p2   # 영어로 쓴 항목은 그대로
+
+
+def test_image_prompt_starts_with_scene_not_portrait():
+    """실제 뉴테이크: 외모 설명이 앞에 오면 참조 사진을 베낀 증명사진이 나왔다 → 장면이 먼저."""
+    cut = SAMPLE["episodes"][0]["cuts"][1]
+    img = export.full_prompt(cut, SAMPLE["bible"], _cfg(), "image")
+    assert img.startswith("Same person as in the reference image") and "Not a studio portrait" in img
+    assert img.index("New scene:") < img.index(cut["image_prompt_en"][:20]) < img.index("Appearance —")
+    vid = export.full_prompt(cut, SAMPLE["bible"], _cfg(), "video")
+    assert vid.startswith("Characters —") and "studio portrait" not in vid
+    no_char = dict(cut, characters=[])
+    assert not export.full_prompt(no_char, SAMPLE["bible"], _cfg(), "image").startswith("Same person")

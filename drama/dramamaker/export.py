@@ -35,9 +35,18 @@ def full_prompt(cut: dict, bible: dict, cfg: dict, kind: str = "video") -> str:
              if cid in chars and _en(chars[cid]["look_en"])]
     body = cut["video_prompt_en"] if kind == "video" else cut["image_prompt_en"]
     parts = []
-    if looks:
-        parts.append("Characters — " + " | ".join(looks) + ".")
-    parts.append(_sentence(body))
+    if kind == "image":
+        # 실제 뉴테이크 테스트: 외모 설명이 맨 앞이면 참조 사진을 그대로 베낀 '증명사진'이 나왔다.
+        # 장면을 먼저 쓰고, 외모는 참조 사진과 같다고 짧게 밝힌 뒤 뒤쪽에 둔다.
+        if looks:
+            parts.append("Same person as in the reference image (same face, hair and outfit). New scene:")
+        parts.append(_sentence(body))
+        if looks:
+            parts.append("Appearance — " + " | ".join(looks) + ".")
+    else:
+        if looks:
+            parts.append("Characters — " + " | ".join(looks) + ".")
+        parts.append(_sentence(body))
     shot = ", ".join(x for x in (_en(cut["shot"]), f"camera: {_en(cut['camera_move'])}" if _en(cut["camera_move"]) else "") if x)
     if shot:
         parts.append(f"Shot: {shot}.")
@@ -46,7 +55,10 @@ def full_prompt(cut: dict, bible: dict, cfg: dict, kind: str = "video") -> str:
         parts.append(f"Setting: {setting}.")
     if _en(cut["emotion"]):
         parts.append(f"Mood: {_en(cut['emotion'])}.")
-    parts.append(f"Style: {cfg['visual_style']}. Vertical {cfg['aspect']} frame. No text, no subtitles, no watermark.")
+    parts.append(f"Style: {cfg['visual_style']}. Vertical {cfg['aspect']} frame.")
+    if kind == "image":
+        parts.append("Not a studio portrait, no plain background.")
+    parts.append("No text, no subtitles, no watermark.")
     return " ".join(p for p in parts if p)
 
 
@@ -109,8 +121,9 @@ def write_csv(path: Path, ep: dict, bible: dict, cfg: dict) -> None:
 
 def write_paste(path: Path, ep: dict, bible: dict, cfg: dict) -> None:
     out = [f"EP{ep['no']:02d}. {ep['title']} — 뉴테이크 붙여넣기용",
-           "각 컷의 [영상 프롬프트] 를 복사해 뉴테이크에 붙여넣고, 길이를 '초'에 맞추세요.",
-           "등장인물 기준 이미지(01_인물설정표.md)를 참조 이미지로 함께 넣으세요.", ""]
+           "① [시작 이미지 프롬프트] 영어 문단만 복사해 '이미지 생성'(9:16)에 붙여넣고,",
+           "   그 컷에 나오는 인물의 기준 얼굴 사진을 '캔버스 참조'로 연결하세요. (안내 줄은 붙여넣지 마세요)",
+           "② 만든 이미지로 '영상 생성'을 하고 [영상 프롬프트] 를 붙여넣은 뒤, 길이를 '초'에 맞추세요.", ""]
     for c in ep["cuts"]:
         out += ["=" * 60,
                 f"컷 {c['no']}  |  {c['seconds']}초  |  인물: {', '.join(c['characters']) or '-'}",
