@@ -348,3 +348,45 @@ def test_requirements_files_readable_on_korean_windows():
     for f in (root / "requirements.txt", root / "cardnews" / "requirements.txt",
               root / "drama" / "requirements.txt"):
         f.read_bytes().decode("ascii")
+
+
+# ── 목소리 자동 대체 ───────────────────────────────────
+def test_voice_engine_falls_back_to_windows_and_keeps_it(tmp_path, monkeypatch):
+    calls = []
+
+    def edge_blocked(text, voice, out):
+        calls.append("edge")
+        out.write_bytes(b"")
+        raise OSError("[WinError 64] 지정된 네트워크 이름을 더 이상 사용할 수 없습니다")
+
+    def windows_ok(text, voice, out):
+        calls.append("windows")
+        _tone(text, voice, out)
+
+    monkeypatch.setattr(edit, "edge_tts_synth", edge_blocked)
+    monkeypatch.setattr(edit, "windows_tts_synth", windows_ok)
+    monkeypatch.setattr(edit.VoiceEngine, "ENGINES", {"edge": edge_blocked, "windows": windows_ok})
+    series = copy.deepcopy(SAMPLE)
+    series["episodes"][0]["cuts"] = series["episodes"][0]["cuts"][1:4]   # 대사 있는 컷 3개
+    logs = []
+    edit.edit_episode(tmp_path, series, 1, _cfg(), tts=True, log=logs.append)
+    assert calls == ["edge", "windows", "windows", "windows"]            # 한 번 막히면 이후엔 바로 윈도우
+    assert any("윈도우 기본 한국어 목소리로 바꿔서" in l for l in logs)
+    assert "음성 O (윈도우 기본 목소리)" in logs[-1]
+    mp3s = sorted((tmp_path / "_편집작업" / "EP01").glob("*.mp3"))
+    assert len(mp3s) == 3 and all(m.stat().st_size > 0 for m in mp3s)
+    srt = (tmp_path / "05_자막_EP01.srt").read_text(encoding="utf-8")
+    assert "확실해요?" in srt
+
+
+def test_voice_engine_modes_and_windows_guard(tmp_path):
+    assert edit.VoiceEngine("windows").name == "windows" and edit.VoiceEngine("edge").name == "edge"
+    assert [n for n, _ in edit.VoiceEngine("auto").order] == ["edge", "windows"]
+    assert edit.is_male_voice({"voice": edit.MALE}) and not edit.is_male_voice({"voice": edit.FEMALE})
+    import sys
+    if sys.platform != "win32":
+        try:
+            edit.windows_tts_synth("안녕", {"voice": edit.FEMALE}, tmp_path / "a.mp3")
+            assert False, "윈도우가 아니면 안내 오류가 나야 함"
+        except edit.EditError as e:
+            assert "윈도우" in str(e)
