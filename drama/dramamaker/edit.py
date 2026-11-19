@@ -179,30 +179,40 @@ class VoiceEngine:
         elif mode in self.ENGINES:
             self.order = [(mode, self.ENGINES[mode])]
         else:
-            self.order = [("edge", edge_tts_synth), ("windows", windows_tts_synth)]
+            self.order = [("edge", self.ENGINES["edge"]), ("windows", self.ENGINES["windows"])]
         self.log = log
 
     @property
     def name(self) -> str:
         return self.order[0][0]
 
+    RETRIES = 3          # 인터넷 목소리는 연결이 가끔 끊기므로 몇 번 다시 시도
+    WAIT = 2.0           # 다시 시도 전 기다리는 시간(초), 시도할수록 늘어남
+
     def __call__(self, text: str, voice: dict, out: Path) -> str:
         """음성을 만들고, 실제로 쓴 엔진 이름을 돌려줍니다."""
+        import time
         while True:
             name, fn = self.order[0]
-            try:
-                fn(text, voice, out)
-                return name
-            except EditError:
-                raise
-            except Exception as e:
-                out.unlink(missing_ok=True)
-                if len(self.order) == 1:
+            tries = self.RETRIES if name == "edge" else 1
+            for attempt in range(1, tries + 1):
+                try:
+                    fn(text, voice, out)
+                    return name
+                except EditError:
                     raise
-                detail = str(e).strip().splitlines()[0][:160] if str(e).strip() else ""
-                self.log(f"  ⚠ 인터넷 무료 목소리 접속 실패 ({type(e).__name__}: {detail})\n"
-                         "     → 윈도우 기본 한국어 목소리로 바꿔서 계속할게요.")
-                self.order.pop(0)
+                except Exception as e:
+                    out.unlink(missing_ok=True)
+                    err = e
+                    if attempt < tries:
+                        time.sleep(self.WAIT * attempt)
+            if len(self.order) == 1:
+                raise err
+            detail = str(err).strip().splitlines()[0][:160] if str(err).strip() else ""
+            self.log(f"  ⚠ 인터넷 무료 목소리가 {tries}번 연속 끊겼어요 ({type(err).__name__}: {detail})\n"
+                     "     → 남은 대사는 윈도우 기본 한국어 목소리로 만들어요. 나중에 edit 를 다시 실행하면\n"
+                     "       그 대사들도 인터넷 목소리로 다시 시도해요(이미 된 대사는 그대로 둠).")
+            self.order.pop(0)
 
 
 # ── 화면 재료 ───────────────────────────────────────────
@@ -411,6 +421,17 @@ def duck_volume_expr(spans: list[tuple[float, float]], duck: float, ramp: float 
 
 
 # ── 회차 전체 ───────────────────────────────────────────
+def _voice_summary(voiced: int, need: int, engines: set) -> str:
+    """대사가 있는 컷 중 몇 컷에 목소리가 들어갔는지 정확히 알려줍니다."""
+    if need == 0:
+        return " / 대사 없음"
+    how = " (윈도우 기본 목소리 섞임)" if "windows" in engines and len(engines) > 1 else \
+          " (윈도우 기본 목소리)" if engines == {"windows"} else ""
+    if voiced == 0:
+        return " / 음성 없음(자막만)"
+    return f" / 음성 {voiced}/{need}컷{how}"
+
+
 def _voice_key(line: str, voice: dict, engine: str) -> str:
     return hashlib.md5(f"{line}|{voice}|{engine}".encode()).hexdigest()[:10]
 
@@ -445,6 +466,7 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
     pads = [TRANSITIONS[t][1] for t in trans] + [0.0]
     segs, lengths, srt, t0 = [], [], [], 0.0
     counts = {"video": 0, "image": 0, "placeholder": 0, "clip_audio": 0}
+    voiced, used_engines = 0, set()
     for idx, cut in enumerate(ep["cuts"]):
         stem = f"cut{cut['no']:02d}"
         src, kind = _find(clip_dir, stem, VIDEO_EXT), "video"
@@ -467,6 +489,7 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
                     if not mp3.exists() or mp3.stat().st_size == 0:   # 빈 파일 = 지난번 실패 → 다시 생성
                         try:
                             used = engine(d["line"], v, mp3)
+                            used_engines.add(used)
                         except BaseException:
                             mp3.unlink(missing_ok=True)
                             raise
@@ -485,6 +508,7 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
                 tts, voice_files = False, []
 
         lead = max(LEAD, pads[idx - 1] + 0.1) if idx > 0 and pads[idx - 1] > 0 else LEAD  # 전환이 끝난 뒤 대사 시작
+        voiced += bool(voice_files)
         length, events = plan_cut(cut, voice_files, single, lead)
         length = math.ceil(length * FPS - 1e-6) / FPS             # 프레임 단위로 맞춤
         subs = []
@@ -530,6 +554,5 @@ def edit_episode(out_dir: Path, series: dict, ep_no: int, cfg: dict, tts: bool =
     log(f"  · 영상 {counts['video']}컷 / 이미지 {counts['image']}컷 / 대기 화면 {counts['placeholder']}컷"
         + f" / 원본 소리 {counts['clip_audio']}컷"
         + f" / 전환 효과 {sum(t != 'cut' for t in trans)}곳"
-        + (" / 배경음악 O" if bgm else " / 배경음악 없음") + ((" / 음성 O (윈도우 기본 목소리)" if engine.name == "windows" else " / 음성 O") if tts
-           else " / 음성 없음(자막만)"))
+        + (" / 배경음악 O" if bgm else " / 배경음악 없음") + _voice_summary(voiced, sum(bool(c["dialogue"]) for c in ep["cuts"]), used_engines))
     return final
