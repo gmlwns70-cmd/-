@@ -40,8 +40,8 @@ window.SITE = {
     primaryButton: "무료 상담 신청",
     secondaryButton: "작업 사례 보기",
     // 대표 사진: images 폴더에 이 이름으로 사진을 넣으면 자동으로 보입니다.
-    photo: "images/ceo-hero.jpg",
-    photoAlt: "산 아래 밭에서 채소 상자를 든 농부와 태블릿을 든 청년이 함께 웃고 있는 모습",
+    photo: "images/hero-art.jpg",
+    photoAlt: "겹쳐진 산 능선 아래에서 자라는 산양삼 그림. 땅 위로 잎과 붉은 열매, 땅속으로 황금빛 뿌리가 보입니다.",
     photoPlaceholder: "[대표 사진]",
   },
 
