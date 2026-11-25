@@ -217,8 +217,11 @@
   $('#footer-info').innerHTML = [
     ['상호', f.company], ['대표', f.owner], ['사업자등록번호', f.bizNumber],
     ['주소', f.address], ['전화', c.phone], ['이메일', f.email]
-  ].map(function (row) {
-    return '<div><dt>' + row[0] + '</dt><dd>' + value(row[1]) + '</dd></div>';
+  ].filter(function (row) { return row[1]; }).map(function (row) {
+    var v = row[0] === '이메일' && !isPlaceholder(row[1])
+      ? '<a href="mailto:' + esc(row[1]) + '">' + esc(row[1]) + '</a>'
+      : value(row[1]);
+    return '<div><dt>' + row[0] + '</dt><dd>' + v + '</dd></div>';
   }).join('');
   $('#year').textContent = new Date().getFullYear();
 

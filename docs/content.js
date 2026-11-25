@@ -240,8 +240,9 @@ window.SITE = {
   footer: {
     company: "산마루랩",
     owner: "권희준",
-    bizNumber: "[사업자등록번호]",
-    address: "[사업장 주소]",
-    email: "[이메일]",
+    // 사업자등록 후 번호·주소를 넣으면 맨 아래에 표시됩니다 (비워 두면 표시 안 됨)
+    bizNumber: "",
+    address: "",
+    email: "gmlwns70@gmail.com",
   },
 };
